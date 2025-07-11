@@ -1,0 +1,13 @@
+{
+  "OP-2137": {
+    "operation_id": "OP-2137",
+    "operation_name": "test",
+    "commander": 488052909867532288,
+    "objective": "test",
+    "participants": 1,
+    "duration": 1,
+    "status": "active",
+    "start_time": "2025-07-11T21:18:27.239331",
+    "guild_id": 1114936846124843008
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "DEP-44401": {
+    "deployment_id": "DEP-44401",
+    "authorized_by": 488052909867532288,
+    "sector": "delta",
+    "units": 3,
+    "mission_type": "convoy",
+    "priority": "critical",
+    "status": "deployed",
+    "timestamp": "2025-07-11T21:18:48.853871",
+    "guild_id": 1114936846124843008
+  },
+  "DEP-50375": {
+    "deployment_id": "DEP-50375",
+    "authorized_by": 488052909867532288,
+    "sector": "epsilon",
+    "units": 3123,
+    "mission_type": "intelligence",
+    "priority": "medium",
+    "status": "deployed",
+    "timestamp": "2025-07-11T21:19:17.920475",
+    "guild_id": 1114936846124843008
+  }
+}

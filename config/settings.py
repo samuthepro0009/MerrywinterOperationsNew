@@ -20,27 +20,18 @@ class Config:
     COMPANY_ESTABLISHED = "Est. 2025"
     COMPANY_FOUNDERS = ["Rev", "Samu", "Fraa", "Luca"]
     
-    # Security Clearance Levels (Based on org chart)
+    # Security Clearance Levels (Based on organizational sections)
     SECURITY_LEVELS = {
-        'BOARD_OF_DIRECTORS': 10,
-        'CHIEF_EXECUTIVE': 9,
-        'CHIEF_OPERATIONS': 8,
-        'CHIEF_CYBERSECURITY': 8,
-        'CHIEF_COMPLIANCE': 8,
-        'DIRECTOR_SECURITY': 7,
-        'DIRECTOR_CYBERSECURITY': 7,
-        'DIRECTOR_PERSONNEL': 7,
-        'DIRECTOR_INNOVATION': 7,
-        'DIRECTOR_TACTICAL': 6,
-        'DIRECTOR_INTELLIGENCE': 6,
-        'CONVOY_ESCORT': 5,
-        'RECON_SURVEILLANCE': 5,
-        'TRAINING_COMBAT': 5,
-        'EXECUTIVE_PROTECTION': 5,
-        'TACTICAL_DEPLOYMENT': 4,
-        'OMEGA': 3,
-        'BETA': 2,
-        'ALPHA': 1
+        'EXECUTIVE_COMMAND': 10,        # Executive Command
+        'BOARD_OF_DIRECTORS': 9,        # Board of Directors
+        'DEPARTMENT_DIRECTORS': 8,      # Department Directors
+        'COMMAND_LEVEL': 7,             # Command positions
+        'SPECIALIZED_UNITS': 6,         # Specialized unit roles
+        'OMEGA': 5,                     # Senior Veteran Field Operatives
+        'BETA': 4,                      # Senior Field Operatives
+        'ALPHA': 3,                     # Field Operatives
+        'ENLISTED': 2,                  # Regular enlisted
+        'CIVILIAN': 1                   # Guests/Clients
     }
     
     # Role Configuration - COMPLETE role names from the guild
@@ -73,11 +64,24 @@ class Config:
     CLIENT_ROLES = ["Client", "Guest"]
     ENTRANT_ROLES = ["Entrant"]
     
+    # Permission Structure - Based on organizational hierarchy
+    # Executive Command - Highest authority
+    EXECUTIVE_COMMAND_ROLES = ["Executive Command"]
+    
+    # Board of Directors - Strategic oversight
+    BOARD_OF_DIRECTORS_ROLES = ["Board of Directors", "CEO"]
+    
+    # Department Directors - Departmental leadership
+    DEPARTMENT_DIRECTORS_ROLES = ["Department Directors"] + DIRECTOR_SECURITY_ROLES
+    
+    # Enlisted - Regular operators (all field operatives)
+    ENLISTED_ROLES = OMEGA_ROLES + BETA_ROLES + ALPHA_ROLES + ["Entrant"]
+    
     # Moderation Configuration
     COMMUNITY_MANAGERS = [618708505393889300, 700659364574396438, 972959357971103834, 488052909867532288]
-    ADMIN_ROLES = ["Board of Directors", "CEO", "Executive Command"] + DIRECTOR_SECURITY_ROLES
-    MODERATOR_ROLES = COMMAND_ROLES[:10]  # First 10 command roles as moderators
-    HELPER_ROLES = COMMAND_ROLES[10:] + ["Verified"]  # Remaining command roles + verified users
+    ADMIN_ROLES = EXECUTIVE_COMMAND_ROLES + BOARD_OF_DIRECTORS_ROLES
+    MODERATOR_ROLES = DEPARTMENT_DIRECTORS_ROLES[:5]  # First 5 department directors
+    HELPER_ROLES = DEPARTMENT_DIRECTORS_ROLES[5:] + COMMAND_ROLES[:10]  # Other directors + command roles
     
     # Channel Configuration
     TICKET_CATEGORY = "TICKET SYSTEM"
@@ -187,18 +191,16 @@ class Config:
         
         # Check all clearance levels from highest to lowest
         clearance_checks = [
+            ('EXECUTIVE_COMMAND', cls.EXECUTIVE_COMMAND_ROLES),
             ('BOARD_OF_DIRECTORS', cls.BOARD_OF_DIRECTORS_ROLES),
-            ('CHIEF_EXECUTIVE', cls.CHIEF_EXECUTIVE_ROLES),
-            ('DIRECTOR_SECURITY', cls.DIRECTOR_SECURITY_ROLES),
-            ('CONVOY_ESCORT', cls.CONVOY_ESCORT_ROLES),
-            ('RECON_SURVEILLANCE', cls.RECON_SURVEILLANCE_ROLES),
-            ('TRAINING_COMBAT', cls.TRAINING_COMBAT_ROLES),
-            ('EXECUTIVE_PROTECTION', cls.EXECUTIVE_PROTECTION_ROLES),
-            ('TACTICAL_DEPLOYMENT', cls.TACTICAL_DEPLOYMENT_ROLES),
-            ('INTELLIGENCE', cls.INTELLIGENCE_ROLES),
+            ('DEPARTMENT_DIRECTORS', cls.DEPARTMENT_DIRECTORS_ROLES),
+            ('COMMAND_LEVEL', cls.COMMAND_ROLES),
+            ('SPECIALIZED_UNITS', cls.CONVOY_ESCORT_ROLES + cls.RECON_SURVEILLANCE_ROLES + cls.TRAINING_COMBAT_ROLES + cls.EXECUTIVE_PROTECTION_ROLES + cls.TACTICAL_DEPLOYMENT_ROLES + cls.INTELLIGENCE_ROLES),
             ('OMEGA', cls.OMEGA_ROLES),
             ('BETA', cls.BETA_ROLES),
-            ('ALPHA', cls.ALPHA_ROLES)
+            ('ALPHA', cls.ALPHA_ROLES),
+            ('ENLISTED', cls.ENLISTED_ROLES),
+            ('CIVILIAN', cls.CLIENT_ROLES + cls.VERIFICATION_ROLES)
         ]
         
         for level, role_list in clearance_checks:
@@ -222,19 +224,38 @@ class Config:
         return user_id in cls.COMMUNITY_MANAGERS
     
     @classmethod
+    def is_executive_command(cls, roles: List[str]) -> bool:
+        """Check if user has Executive Command clearance"""
+        role_names = [role.lower() for role in roles]
+        return any(role.lower() in role_names for role in cls.EXECUTIVE_COMMAND_ROLES if role)
+    
+    @classmethod
+    def is_board_of_directors(cls, roles: List[str]) -> bool:
+        """Check if user has Board of Directors clearance"""
+        role_names = [role.lower() for role in roles]
+        return any(role.lower() in role_names for role in cls.BOARD_OF_DIRECTORS_ROLES if role)
+    
+    @classmethod
+    def is_department_director(cls, roles: List[str]) -> bool:
+        """Check if user has Department Director clearance"""
+        role_names = [role.lower() for role in roles]
+        return any(role.lower() in role_names for role in cls.DEPARTMENT_DIRECTORS_ROLES if role)
+    
+    @classmethod
+    def is_enlisted(cls, roles: List[str]) -> bool:
+        """Check if user has Enlisted clearance"""
+        role_names = [role.lower() for role in roles]
+        return any(role.lower() in role_names for role in cls.ENLISTED_ROLES if role)
+    
+    @classmethod
     def is_admin(cls, roles: List[str], user_id: int = None) -> bool:
         """Check if user has admin permissions"""
         # Community managers are always admins
         if user_id and cls.is_community_manager(user_id):
             return True
-            
-        role_names = [role.lower() for role in roles]
         
-        for role in cls.ADMIN_ROLES:
-            if role and role.lower() in role_names:
-                return True
-        
-        return False
+        # Executive Command and Board of Directors have admin permissions
+        return cls.is_executive_command(roles) or cls.is_board_of_directors(roles)
     
     @classmethod
     def is_moderator(cls, roles: List[str], user_id: int = None) -> bool:
@@ -244,14 +265,9 @@ class Config:
             return True
         if cls.is_admin(roles, user_id):
             return True
-            
-        role_names = [role.lower() for role in roles]
         
-        for role in cls.MODERATOR_ROLES:
-            if role and role.lower() in role_names:
-                return True
-        
-        return False
+        # Department Directors have moderator permissions
+        return cls.is_department_director(roles)
     
     @classmethod
     def is_helper(cls, roles: List[str], user_id: int = None) -> bool:
@@ -259,14 +275,10 @@ class Config:
         # Higher roles have helper permissions
         if cls.is_moderator(roles, user_id):
             return True
-            
+        
+        # Command roles have helper permissions
         role_names = [role.lower() for role in roles]
-        
-        for role in cls.HELPER_ROLES:
-            if role and role.lower() in role_names:
-                return True
-        
-        return False
+        return any(role.lower() in role_names for role in cls.COMMAND_ROLES if role)
     
     @classmethod
     def check_guild_authorization(cls, guild_id: int) -> bool:

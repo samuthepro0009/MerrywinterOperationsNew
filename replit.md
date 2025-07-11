@@ -24,6 +24,9 @@ Preferred communication style: Simple, everyday language.
 ✓ Configurato canali operazioni (annunci: 1393246091289559172, log: 1393340130177191956)
 ✓ Implementato sistema completo di clearance con gerarchia PMC completa
 ✓ Configurato ruoli moderazione basati su struttura organizzativa reale
+✓ Implementato struttura permessi per sezioni: Executive Command, Board of Directors, Department Directors, Enlisted
+✓ Riorganizzato sistema clearance secondo gerarchia PMC corretta
+✓ Configurato funzioni specifiche per ogni sezione organizzativa
 
 ## System Architecture
 
