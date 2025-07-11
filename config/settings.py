@@ -43,38 +43,41 @@ class Config:
         'ALPHA': 1
     }
     
-    # Role Configuration - Actual role names from the guild
+    # Role Configuration - COMPLETE role names from the guild
     BOARD_OF_DIRECTORS_ROLES = ["Board of Directors", "Merrywinter Security Consulting"]
-    CHIEF_EXECUTIVE_ROLES = ["Chief Executive Officer", "Chief Operations Officer", "Chief Cybersecurity Officer", "Chief Compliance Officer"]
-    CHIEF_OPERATIONS_ROLES = ["Chief Operations Officer"]
-    CHIEF_CYBERSECURITY_ROLES = ["Chief Cybersecurity Officer"]
-    CHIEF_COMPLIANCE_ROLES = ["Chief Compliance Officer"]
     
-    # Director Level Roles
-    DIRECTOR_SECURITY_ROLES = ["Director of Security Operations", "Director of Cybersecurity", "Director of Personnel"]
-    DIRECTOR_CYBERSECURITY_ROLES = ["Director of Cybersecurity"]
-    DIRECTOR_PERSONNEL_ROLES = ["Director of Personnel"]
-    DIRECTOR_INNOVATION_ROLES = ["Director of Innovation"]
-    DIRECTOR_TACTICAL_ROLES = ["Tactical Operations Section Command"]
-    DIRECTOR_INTELLIGENCE_ROLES = ["Intelligence and Security Section Command"]
+    # Executive Level Roles
+    CHIEF_EXECUTIVE_ROLES = ["CEO", "Executive Command"]
     
-    # Specialized Unit Roles
+    # Director Level Roles - Complete list
+    DIRECTOR_SECURITY_ROLES = ["Director of Strategic Operations", "Director of Security Architecture", "Compliance & Oversight Director", "Director of Security Operations", "Director of Cybersecurity Operations", "Director of Personnel and Clearance", "Director of Innovation and Technology", "Department Directors", "Director of Tactical Operations", "Director of Intelligence and Security", "Escort Security Units Director"]
+    
+    # Command Level Roles - All command positions
+    COMMAND_ROLES = ["Tactical Operations Section Command", "Tactical Deployment Command", "Convoy & Armored Escort Division Command", "Recon & Surveillance Command", "Training & Combat Readiness Department Command", "Executive Protection Unit Command", "Intelligence and Security Section Command", "Human Intelligence Detachment Command", "Psychological Operations Detachment Command", "Open Source Intelligence Command", "Tactical Operations Sub Unit Command", "Blue Team Command", "Red Team Command", "Convoy & Control Commander", "Undercover Units Command", "Long Range Recon Team Command", "Advanced Tactical Training Teams Command", "Close Protection Teams Command", "Emergency Evacuation & Extraction Unit Command"]
+    
+    # Specialized Unit Roles - Complete structure
     CONVOY_ESCORT_ROLES = ["Convoy & Armored Escort Division Command", "Convoy & Control Commander", "Convoy & Control Team"]
     RECON_SURVEILLANCE_ROLES = ["Recon & Surveillance Command", "Long Range Recon Team Command", "Long Range Recon Team"]
     TRAINING_COMBAT_ROLES = ["Training & Combat Readiness Department Command", "Advanced Tactical Training Teams Command", "Advanced Tactical Training Teams"]
     EXECUTIVE_PROTECTION_ROLES = ["Executive Protection Unit Command", "Close Protection Teams Command", "Close Protection Teams"]
     TACTICAL_DEPLOYMENT_ROLES = ["Tactical Deployment Command", "Tactical Operations Sub Unit Command", "Tactical Operations Sub Units"]
+    INTELLIGENCE_ROLES = ["Intelligence and Security Section Command", "Human Intelligence Detachment Command", "Psychological Operations Detachment Command", "Open Source Intelligence Command"]
     
-    # Field Operative Roles (OMEGA, BETA, ALPHA equivalent)
+    # Field Operative Roles - Complete hierarchy
     OMEGA_ROLES = ["Senior Veteran Field Operative", "Veteran Field Operative", "Candidate Veteran Field Operative"]
     BETA_ROLES = ["Senior Field Operative III", "Senior Field Operative II", "Senior Field Operative I"]
     ALPHA_ROLES = ["Field Operative III", "Field Operative II", "Field Operative I", "Junior Field Operative", "Trainee Operative"]
     
+    # Additional roles
+    VERIFICATION_ROLES = ["Verified", "Unverified"]
+    CLIENT_ROLES = ["Client", "Guest"]
+    ENTRANT_ROLES = ["Entrant"]
+    
     # Moderation Configuration
     COMMUNITY_MANAGERS = [618708505393889300, 700659364574396438, 972959357971103834, 488052909867532288]
-    ADMIN_ROLES = ["Board of Directors", "Chief Executive Officer", "Chief Operations Officer", "Chief Cybersecurity Officer", "Chief Compliance Officer"]
-    MODERATOR_ROLES = ["Director of Security Operations", "Director of Cybersecurity", "Director of Personnel", "Director of Innovation"]
-    HELPER_ROLES = ["Tactical Operations Section Command", "Intelligence and Security Section Command"]
+    ADMIN_ROLES = ["Board of Directors", "CEO", "Executive Command"] + DIRECTOR_SECURITY_ROLES
+    MODERATOR_ROLES = COMMAND_ROLES[:10]  # First 10 command roles as moderators
+    HELPER_ROLES = COMMAND_ROLES[10:] + ["Verified"]  # Remaining command roles + verified users
     
     # Channel Configuration
     TICKET_CATEGORY = "TICKET SYSTEM"
@@ -87,9 +90,9 @@ class Config:
 
     
     # High Command Operations Channels
-    DEPLOYMENT_CHANNEL_ID = int(os.getenv('DEPLOYMENT_CHANNEL_ID', '0')) if os.getenv('DEPLOYMENT_CHANNEL_ID') else None
-    OPERATION_START_CHANNEL_ID = int(os.getenv('OPERATION_START_CHANNEL_ID', '0')) if os.getenv('OPERATION_START_CHANNEL_ID') else None
-    OPERATION_LOG_CHANNEL_ID = int(os.getenv('OPERATION_LOG_CHANNEL_ID', '0')) if os.getenv('OPERATION_LOG_CHANNEL_ID') else None
+    DEPLOYMENT_CHANNEL_ID = 1393246091289559172  # Canale annunci operazioni
+    OPERATION_START_CHANNEL_ID = 1393246091289559172  # Stesso canale per start operazioni
+    OPERATION_LOG_CHANNEL_ID = 1393340130177191956  # Canale log operazioni
     
     # Anti-Raid Configuration
     ANTI_RAID_ENABLED = os.getenv('ANTI_RAID_ENABLED', 'true').lower() == 'true'
@@ -186,20 +189,13 @@ class Config:
         clearance_checks = [
             ('BOARD_OF_DIRECTORS', cls.BOARD_OF_DIRECTORS_ROLES),
             ('CHIEF_EXECUTIVE', cls.CHIEF_EXECUTIVE_ROLES),
-            ('CHIEF_OPERATIONS', cls.CHIEF_OPERATIONS_ROLES),
-            ('CHIEF_CYBERSECURITY', cls.CHIEF_CYBERSECURITY_ROLES),
-            ('CHIEF_COMPLIANCE', cls.CHIEF_COMPLIANCE_ROLES),
             ('DIRECTOR_SECURITY', cls.DIRECTOR_SECURITY_ROLES),
-            ('DIRECTOR_CYBERSECURITY', cls.DIRECTOR_CYBERSECURITY_ROLES),
-            ('DIRECTOR_PERSONNEL', cls.DIRECTOR_PERSONNEL_ROLES),
-            ('DIRECTOR_INNOVATION', cls.DIRECTOR_INNOVATION_ROLES),
-            ('DIRECTOR_TACTICAL', cls.DIRECTOR_TACTICAL_ROLES),
-            ('DIRECTOR_INTELLIGENCE', cls.DIRECTOR_INTELLIGENCE_ROLES),
             ('CONVOY_ESCORT', cls.CONVOY_ESCORT_ROLES),
             ('RECON_SURVEILLANCE', cls.RECON_SURVEILLANCE_ROLES),
             ('TRAINING_COMBAT', cls.TRAINING_COMBAT_ROLES),
             ('EXECUTIVE_PROTECTION', cls.EXECUTIVE_PROTECTION_ROLES),
             ('TACTICAL_DEPLOYMENT', cls.TACTICAL_DEPLOYMENT_ROLES),
+            ('INTELLIGENCE', cls.INTELLIGENCE_ROLES),
             ('OMEGA', cls.OMEGA_ROLES),
             ('BETA', cls.BETA_ROLES),
             ('ALPHA', cls.ALPHA_ROLES)
