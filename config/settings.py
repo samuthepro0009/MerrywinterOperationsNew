@@ -123,6 +123,16 @@ class Config:
         }
     }
     
+    # Ticket Status Options
+    TICKET_STATUSES = {
+        'open': {'name': 'Open', 'emoji': '🟢', 'color': 0x00FF00},
+        'taken': {'name': 'Taken', 'emoji': '🟡', 'color': 0xFFFF00},
+        'in_progress': {'name': 'In Progress', 'emoji': '🔵', 'color': 0x0000FF},
+        'pending_review': {'name': 'Pending Review', 'emoji': '🟠', 'color': 0xFFA500},
+        'closed': {'name': 'Closed', 'emoji': '🔴', 'color': 0xFF0000},
+        'auto_closed': {'name': 'Auto Closed', 'emoji': '⚫', 'color': 0x808080}
+    }
+    
     # PMC Chain of Command
     CHAIN_OF_COMMAND = {
         'OMEGA': {

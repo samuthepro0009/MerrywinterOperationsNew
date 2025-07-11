@@ -38,8 +38,11 @@ class TicketSystem(commands.Cog):
             if not category:
                 category = await guild.create_category(Config.TICKET_CATEGORY)
             
-            # Create channel
-            channel_name = f"ticket-{ticket_type}-{ticket_id[:8]}"
+            # Create shorter channel name (Discord limit: 100 chars)
+            ticket_short = ticket_id[:8]
+            channel_name = f"ticket-{ticket_type}-{ticket_short}".lower().replace(' ', '-')
+            if len(channel_name) > 95:  # Leave room for safety
+                channel_name = f"tkt-{ticket_type[:10]}-{ticket_short}"
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
                 user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
@@ -260,13 +263,15 @@ class TicketSystem(commands.Cog):
             return
         
         # Create status embed
+        status_info = Config.TICKET_STATUSES.get(ticket_data['status'], {'name': ticket_data['status'].title(), 'emoji': '🎫', 'color': Config.COLORS['info']})
+        
         embed = discord.Embed(
             title=f"🎫 Ticket Status - {ticket_id}",
             description=f"**Type:** {ticket_data['type'].replace('-', ' ').title()}\n"
-                       f"**Status:** {ticket_data['status'].title()}\n"
+                       f"**Status:** {status_info['emoji']} {status_info['name']}\n"
                        f"**Created:** {ticket_data['created_at']}\n"
                        f"**Reporter:** <@{ticket_data.get('reporter', ticket_data.get('client', 'Unknown'))}>",
-            color=Config.COLORS['info']
+            color=status_info['color']
         )
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Ticket System")
         
@@ -327,6 +332,64 @@ class TicketSystem(commands.Cog):
                     pass
         
         await interaction.response.send_message(f"✅ Ticket {ticket_id} has been closed successfully.", ephemeral=True)
+    
+    @app_commands.command(name="update-ticket", description="Update ticket status (Staff only)")
+    @app_commands.describe(
+        ticket_id="The ID of the ticket to update",
+        status="New status for the ticket"
+    )
+    @app_commands.choices(
+        status=[
+            app_commands.Choice(name="Open", value="open"),
+            app_commands.Choice(name="Taken", value="taken"),
+            app_commands.Choice(name="In Progress", value="in_progress"),
+            app_commands.Choice(name="Pending Review", value="pending_review"),
+            app_commands.Choice(name="Closed", value="closed")
+        ]
+    )
+    async def update_ticket_status(self, interaction: discord.Interaction, ticket_id: str, status: str):
+        """Update ticket status (Staff only)"""
+        # Check if user has permission
+        user_clearance = get_user_clearance(interaction.user.roles)
+        if not (Config.is_moderator([role.name for role in interaction.user.roles], interaction.user.id) or 
+                Config.has_permission(user_clearance, 'BETA')):
+            await interaction.response.send_message("❌ You don't have permission to update tickets.", ephemeral=True)
+            return
+        
+        # Get ticket data
+        ticket_data = await self.storage.get_ticket(ticket_id)
+        
+        if not ticket_data:
+            await interaction.response.send_message("❌ Ticket not found.", ephemeral=True)
+            return
+        
+        # Update ticket status
+        old_status = ticket_data['status']
+        ticket_data['status'] = status
+        ticket_data['updated_by'] = interaction.user.id
+        ticket_data['updated_at'] = datetime.utcnow().isoformat()
+        
+        await self.storage.save_ticket(ticket_data)
+        
+        # Send status update to ticket channel
+        if ticket_data.get('channel_id'):
+            channel = interaction.guild.get_channel(ticket_data['channel_id'])
+            if channel:
+                status_info = Config.TICKET_STATUSES.get(status, {'name': status.title(), 'emoji': '🔄', 'color': 0x888888})
+                
+                embed = discord.Embed(
+                    title=f"{status_info['emoji']} Ticket Status Updated",
+                    description=f"**Ticket ID:** `{ticket_id}`\n"
+                               f"**Status:** {old_status.title()} → {status_info['name']}\n"
+                               f"**Updated By:** {interaction.user.mention}\n"
+                               f"**Updated At:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+                    color=status_info['color']
+                )
+                embed.set_footer(text=f"{Config.COMPANY_NAME} - Ticket System")
+                
+                await channel.send(embed=embed)
+        
+        await interaction.response.send_message(f"✅ Ticket {ticket_id} status updated to **{Config.TICKET_STATUSES.get(status, {'name': status.title()})['name']}**.", ephemeral=True)
 
 async def setup(bot):
     """Setup function for the cog"""
