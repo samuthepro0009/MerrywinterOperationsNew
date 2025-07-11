@@ -20,5 +20,17 @@
     "status": "deployed",
     "timestamp": "2025-07-11T21:19:17.920475",
     "guild_id": 1114936846124843008
+  },
+  "DEP-34374": {
+    "deployment_id": "DEP-34374",
+    "authorized_by": 488052909867532288,
+    "sector": "zeta",
+    "units": 22,
+    "mission_type": "intelligence",
+    "priority": "medium",
+    "classified": true,
+    "status": "deployed",
+    "timestamp": "2025-07-11T21:56:56.621798",
+    "guild_id": 1114936846124843008
   }
 }
