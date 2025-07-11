@@ -300,28 +300,11 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
             </div>
             
             <script>
-                // Morse code sound system
-                class MorseCodeAudio {
+                // Retro Computer Terminal Audio System
+                class TerminalAudio {
                     constructor() {
                         this.audioContext = null;
                         this.isPlaying = false;
-                        this.morseMessages = [
-                            'FROST AI',
-                            'OPERATIONAL',
-                            'SECURE',
-                            'MONITORING',
-                            'ACTIVE',
-                            'SYSTEM OK',
-                            'NETWORK STABLE',
-                            'ALL CLEAR'
-                        ];
-                        this.morseCode = {
-                            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
-                            'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
-                            'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
-                            'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
-                            'Y': '-.--', 'Z': '--..', ' ': '/'
-                        };
                         this.initAudio();
                     }
                     
@@ -333,7 +316,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         }
                     }
                     
-                    playBeep(duration, frequency = 800) {
+                    playBeep(duration = 0.05, frequency = 1200, volume = 0.05) {
                         if (!this.audioContext) return;
                         
                         const oscillator = this.audioContext.createOscillator();
@@ -343,67 +326,79 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         gainNode.connect(this.audioContext.destination);
                         
                         oscillator.frequency.value = frequency;
-                        oscillator.type = 'sine';
+                        oscillator.type = 'square'; // Square wave for retro computer sound
                         
-                        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
                         
                         oscillator.start(this.audioContext.currentTime);
                         oscillator.stop(this.audioContext.currentTime + duration);
                     }
                     
-                    async playMorseCode(text) {
+                    playSystemBeep() {
+                        // Classic system beep
+                        this.playBeep(0.1, 800, 0.03);
+                    }
+                    
+                    playKeyClick() {
+                        // Short keyboard click sound
+                        this.playBeep(0.02, 2000, 0.02);
+                    }
+                    
+                    playDataBeep() {
+                        // Data processing beep
+                        this.playBeep(0.08, 1500, 0.04);
+                    }
+                    
+                    playErrorBeep() {
+                        // Error/warning beep
+                        this.playBeep(0.15, 400, 0.05);
+                    }
+                    
+                    async playStartupSequence() {
                         if (this.isPlaying) return;
                         this.isPlaying = true;
                         
-                        const dotDuration = 0.1;
-                        const dashDuration = 0.3;
-                        const pauseDuration = 0.1;
-                        const letterPause = 0.3;
-                        const wordPause = 0.7;
+                        // Startup beep sequence
+                        this.playBeep(0.1, 1000, 0.03);
+                        await this.sleep(150);
+                        this.playBeep(0.1, 1200, 0.03);
+                        await this.sleep(150);
+                        this.playBeep(0.15, 1500, 0.04);
                         
-                        for (let char of text.toUpperCase()) {
-                            if (this.morseCode[char]) {
-                                const morse = this.morseCode[char];
-                                
-                                if (morse === '/') {
-                                    await this.sleep(wordPause * 1000);
-                                } else {
-                                    for (let symbol of morse) {
-                                        if (symbol === '.') {
-                                            this.playBeep(dotDuration);
-                                            await this.sleep(dotDuration * 1000);
-                                        } else if (symbol === '-') {
-                                            this.playBeep(dashDuration);
-                                            await this.sleep(dashDuration * 1000);
-                                        }
-                                        await this.sleep(pauseDuration * 1000);
-                                    }
-                                    await this.sleep(letterPause * 1000);
-                                }
-                            }
+                        this.isPlaying = false;
+                    }
+                    
+                    async playProcessingSequence() {
+                        if (this.isPlaying) return;
+                        this.isPlaying = true;
+                        
+                        // Processing sequence: 3 quick beeps
+                        for (let i = 0; i < 3; i++) {
+                            this.playBeep(0.03, 1800 + (i * 200), 0.02);
+                            await this.sleep(80);
                         }
                         
                         this.isPlaying = false;
                     }
                     
+                    async playStatusUpdate() {
+                        // Single status update beep
+                        this.playBeep(0.06, 1400, 0.03);
+                    }
+                    
                     sleep(ms) {
                         return new Promise(resolve => setTimeout(resolve, ms));
                     }
-                    
-                    playRandomMessage() {
-                        const message = this.morseMessages[Math.floor(Math.random() * this.morseMessages.length)];
-                        this.playMorseCode(message);
-                    }
                 }
                 
-                // Initialize morse code audio
-                const morseAudio = new MorseCodeAudio();
+                // Initialize terminal audio
+                const terminalAudio = new TerminalAudio();
                 
                 // Add click listener to enable audio context
                 document.addEventListener('click', () => {
-                    if (morseAudio.audioContext && morseAudio.audioContext.state === 'suspended') {
-                        morseAudio.audioContext.resume();
+                    if (terminalAudio.audioContext && terminalAudio.audioContext.state === 'suspended') {
+                        terminalAudio.audioContext.resume();
                     }
                 }, { once: true });
                 
@@ -418,9 +413,9 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         document.getElementById('guilds').textContent = data.guilds || 0;
                         document.getElementById('commands').textContent = data.commands_executed || 0;
                         
-                        // Play morse code occasionally when data updates
-                        if (Math.random() < 0.3) {
-                            morseAudio.playRandomMessage();
+                        // Play terminal beep when data updates
+                        if (Math.random() < 0.4) {
+                            terminalAudio.playStatusUpdate();
                         }
                         
                     } catch (error) {
@@ -432,33 +427,41 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     }
                 }
                 
-                // Add ambient morse code sounds
-                function startAmbientMorse() {
+                // Add ambient terminal sounds
+                function startAmbientSounds() {
                     setInterval(() => {
-                        if (Math.random() < 0.2) { // 20% chance every interval
-                            morseAudio.playRandomMessage();
+                        const rand = Math.random();
+                        if (rand < 0.15) { // 15% chance for processing sequence
+                            terminalAudio.playProcessingSequence();
+                        } else if (rand < 0.25) { // 10% chance for single beep
+                            terminalAudio.playDataBeep();
                         }
-                    }, 15000); // Every 15 seconds
+                    }, 8000); // Every 8 seconds
                 }
                 
                 // Load data on page load
                 loadDashboardData();
                 
+                // Play startup sequence after delay
+                setTimeout(() => {
+                    terminalAudio.playStartupSequence();
+                }, 2000);
+                
                 // Start ambient sounds after a delay
-                setTimeout(startAmbientMorse, 5000);
+                setTimeout(startAmbientSounds, 5000);
                 
                 // Refresh data every 30 seconds
                 setInterval(loadDashboardData, 30000);
                 
                 // Add click sound effects
                 document.addEventListener('click', () => {
-                    morseAudio.playBeep(0.05, 600);
+                    terminalAudio.playKeyClick();
                 });
                 
                 // Add hover sound effects for cards
                 document.querySelectorAll('.stat-card, .feature-card').forEach(card => {
                     card.addEventListener('mouseenter', () => {
-                        morseAudio.playBeep(0.03, 400);
+                        terminalAudio.playSystemBeep();
                     });
                 });
             </script>
