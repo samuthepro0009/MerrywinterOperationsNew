@@ -1,10 +1,10 @@
 {
-  "uptime": "00:00:03",
+  "uptime": "00:00:39",
   "guilds": 1,
   "users": 12,
-  "latency": 78,
+  "latency": 89,
   "commands_executed": 0,
-  "last_update": "2025-07-11T23:03:01.293471",
+  "last_update": "2025-07-11T23:23:38.240882",
   "version": "v2.5.7",
   "status": "operational"
 }
