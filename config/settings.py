@@ -43,36 +43,46 @@ class Config:
         'ALPHA': 1
     }
     
-    # Role Configuration - Set these in your environment variables
-    BOARD_OF_DIRECTORS_ROLES = os.getenv('BOARD_OF_DIRECTORS_ROLES', '').split(',') if os.getenv('BOARD_OF_DIRECTORS_ROLES') else []
-    CHIEF_EXECUTIVE_ROLES = os.getenv('CHIEF_EXECUTIVE_ROLES', '').split(',') if os.getenv('CHIEF_EXECUTIVE_ROLES') else []
-    CHIEF_OPERATIONS_ROLES = os.getenv('CHIEF_OPERATIONS_ROLES', '').split(',') if os.getenv('CHIEF_OPERATIONS_ROLES') else []
-    CHIEF_CYBERSECURITY_ROLES = os.getenv('CHIEF_CYBERSECURITY_ROLES', '').split(',') if os.getenv('CHIEF_CYBERSECURITY_ROLES') else []
-    CHIEF_COMPLIANCE_ROLES = os.getenv('CHIEF_COMPLIANCE_ROLES', '').split(',') if os.getenv('CHIEF_COMPLIANCE_ROLES') else []
-    DIRECTOR_SECURITY_ROLES = os.getenv('DIRECTOR_SECURITY_ROLES', '').split(',') if os.getenv('DIRECTOR_SECURITY_ROLES') else []
-    DIRECTOR_CYBERSECURITY_ROLES = os.getenv('DIRECTOR_CYBERSECURITY_ROLES', '').split(',') if os.getenv('DIRECTOR_CYBERSECURITY_ROLES') else []
-    DIRECTOR_PERSONNEL_ROLES = os.getenv('DIRECTOR_PERSONNEL_ROLES', '').split(',') if os.getenv('DIRECTOR_PERSONNEL_ROLES') else []
-    DIRECTOR_INNOVATION_ROLES = os.getenv('DIRECTOR_INNOVATION_ROLES', '').split(',') if os.getenv('DIRECTOR_INNOVATION_ROLES') else []
-    DIRECTOR_TACTICAL_ROLES = os.getenv('DIRECTOR_TACTICAL_ROLES', '').split(',') if os.getenv('DIRECTOR_TACTICAL_ROLES') else []
-    DIRECTOR_INTELLIGENCE_ROLES = os.getenv('DIRECTOR_INTELLIGENCE_ROLES', '').split(',') if os.getenv('DIRECTOR_INTELLIGENCE_ROLES') else []
-    CONVOY_ESCORT_ROLES = os.getenv('CONVOY_ESCORT_ROLES', '').split(',') if os.getenv('CONVOY_ESCORT_ROLES') else []
-    RECON_SURVEILLANCE_ROLES = os.getenv('RECON_SURVEILLANCE_ROLES', '').split(',') if os.getenv('RECON_SURVEILLANCE_ROLES') else []
-    TRAINING_COMBAT_ROLES = os.getenv('TRAINING_COMBAT_ROLES', '').split(',') if os.getenv('TRAINING_COMBAT_ROLES') else []
-    EXECUTIVE_PROTECTION_ROLES = os.getenv('EXECUTIVE_PROTECTION_ROLES', '').split(',') if os.getenv('EXECUTIVE_PROTECTION_ROLES') else []
-    TACTICAL_DEPLOYMENT_ROLES = os.getenv('TACTICAL_DEPLOYMENT_ROLES', '').split(',') if os.getenv('TACTICAL_DEPLOYMENT_ROLES') else []
-    OMEGA_ROLES = os.getenv('OMEGA_ROLES', '').split(',') if os.getenv('OMEGA_ROLES') else []
-    BETA_ROLES = os.getenv('BETA_ROLES', '').split(',') if os.getenv('BETA_ROLES') else []
-    ALPHA_ROLES = os.getenv('ALPHA_ROLES', '').split(',') if os.getenv('ALPHA_ROLES') else []
+    # Role Configuration - Actual role names from the guild
+    BOARD_OF_DIRECTORS_ROLES = ["Board of Directors", "Merrywinter Security Consulting"]
+    CHIEF_EXECUTIVE_ROLES = ["Chief Executive Officer", "Chief Operations Officer", "Chief Cybersecurity Officer", "Chief Compliance Officer"]
+    CHIEF_OPERATIONS_ROLES = ["Chief Operations Officer"]
+    CHIEF_CYBERSECURITY_ROLES = ["Chief Cybersecurity Officer"]
+    CHIEF_COMPLIANCE_ROLES = ["Chief Compliance Officer"]
+    
+    # Director Level Roles
+    DIRECTOR_SECURITY_ROLES = ["Director of Security Operations", "Director of Cybersecurity", "Director of Personnel"]
+    DIRECTOR_CYBERSECURITY_ROLES = ["Director of Cybersecurity"]
+    DIRECTOR_PERSONNEL_ROLES = ["Director of Personnel"]
+    DIRECTOR_INNOVATION_ROLES = ["Director of Innovation"]
+    DIRECTOR_TACTICAL_ROLES = ["Tactical Operations Section Command"]
+    DIRECTOR_INTELLIGENCE_ROLES = ["Intelligence and Security Section Command"]
+    
+    # Specialized Unit Roles
+    CONVOY_ESCORT_ROLES = ["Convoy & Armored Escort Division Command", "Convoy & Control Commander", "Convoy & Control Team"]
+    RECON_SURVEILLANCE_ROLES = ["Recon & Surveillance Command", "Long Range Recon Team Command", "Long Range Recon Team"]
+    TRAINING_COMBAT_ROLES = ["Training & Combat Readiness Department Command", "Advanced Tactical Training Teams Command", "Advanced Tactical Training Teams"]
+    EXECUTIVE_PROTECTION_ROLES = ["Executive Protection Unit Command", "Close Protection Teams Command", "Close Protection Teams"]
+    TACTICAL_DEPLOYMENT_ROLES = ["Tactical Deployment Command", "Tactical Operations Sub Unit Command", "Tactical Operations Sub Units"]
+    
+    # Field Operative Roles (OMEGA, BETA, ALPHA equivalent)
+    OMEGA_ROLES = ["Senior Veteran Field Operative", "Veteran Field Operative", "Candidate Veteran Field Operative"]
+    BETA_ROLES = ["Senior Field Operative III", "Senior Field Operative II", "Senior Field Operative I"]
+    ALPHA_ROLES = ["Field Operative III", "Field Operative II", "Field Operative I", "Junior Field Operative", "Trainee Operative"]
     
     # Moderation Configuration
     COMMUNITY_MANAGERS = [618708505393889300, 700659364574396438, 972959357971103834, 488052909867532288]
-    ADMIN_ROLES = os.getenv('ADMIN_ROLES', '').split(',') if os.getenv('ADMIN_ROLES') else []
-    MODERATOR_ROLES = os.getenv('MODERATOR_ROLES', '').split(',') if os.getenv('MODERATOR_ROLES') else []
-    HELPER_ROLES = os.getenv('HELPER_ROLES', '').split(',') if os.getenv('HELPER_ROLES') else []
+    ADMIN_ROLES = ["Board of Directors", "Chief Executive Officer", "Chief Operations Officer", "Chief Cybersecurity Officer", "Chief Compliance Officer"]
+    MODERATOR_ROLES = ["Director of Security Operations", "Director of Cybersecurity", "Director of Personnel", "Director of Innovation"]
+    HELPER_ROLES = ["Tactical Operations Section Command", "Intelligence and Security Section Command"]
     
     # Channel Configuration
-    TICKET_CATEGORY = os.getenv('TICKET_CATEGORY', 'Support Tickets')
-    LOG_CHANNEL = os.getenv('LOG_CHANNEL', 'bot-logs')
+    TICKET_CATEGORY = "TICKET SYSTEM"
+    LOG_CHANNEL = "bot-logs"
+    
+    # Channel IDs from the guild
+    TICKET_CATEGORY_ID = 1393249646192754698
+    LOG_CHANNEL_ID = 1393249520388935793
     
 
     

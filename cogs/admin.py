@@ -5,6 +5,7 @@ Bot management and configuration
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from datetime import datetime
 import os
 import json
@@ -20,12 +21,11 @@ class AdminSystem(commands.Cog):
         self.bot = bot
         self.storage = Storage()
     
-    @commands.command(name='setup')
-    @commands.has_permissions(administrator=True)
-    async def setup_bot(self, ctx):
+    @app_commands.command(name="setup", description="Initial bot setup (Administrator only)")
+    async def setup_bot(self, interaction: discord.Interaction):
         """Initial bot setup (Administrator only)"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to run setup.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to run setup.", ephemeral=True)
             return
         
         embed = discord.Embed(
@@ -75,17 +75,16 @@ class AdminSystem(commands.Cog):
         
         embed.set_footer(text="Merrywinter Security Consulting - Configuration Guide")
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='verify-setup')
-    @commands.has_permissions(administrator=True)
-    async def verify_setup(self, ctx):
+    @app_commands.command(name="verify", description="Verify bot setup configuration")
+    async def verify_setup(self, interaction: discord.Interaction):
         """Verify bot setup configuration"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to verify setup.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to verify setup.", ephemeral=True)
             return
         
-        guild = ctx.guild
+        guild = interaction.guild
         issues = []
         successes = []
         
@@ -165,17 +164,16 @@ class AdminSystem(commands.Cog):
         
         embed.set_footer(text="Merrywinter Security Consulting - Setup Verification")
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='stats')
-    @commands.has_permissions(manage_guild=True)
-    async def statistics(self, ctx):
+    @app_commands.command(name="stats", description="Display bot statistics")
+    async def statistics(self, interaction: discord.Interaction):
         """Display bot statistics"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to view bot statistics.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to view bot statistics.", ephemeral=True)
             return
         
-        guild = ctx.guild
+        guild = interaction.guild
         
         # Get statistics
         total_tickets = await self.storage.get_total_tickets()
@@ -244,14 +242,13 @@ class AdminSystem(commands.Cog):
         
         embed.set_footer(text="Merrywinter Security Consulting - Administrative Statistics")
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='backup')
-    @commands.has_permissions(administrator=True)
-    async def backup_data(self, ctx):
+    @app_commands.command(name="backup", description="Create a backup of bot data")
+    async def backup_data(self, interaction: discord.Interaction):
         """Create a backup of bot data"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to create backups.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to create backups.", ephemeral=True)
             return
         
         try:
@@ -272,20 +269,20 @@ class AdminSystem(commands.Cog):
                 color=Config.COLORS['success']
             )
             
-            await ctx.send(embed=embed, file=discord.File(backup_filename))
+            await interaction.response.send_message(embed=embed, file=discord.File(backup_filename))
             
             # Clean up backup file
             os.remove(backup_filename)
             
         except Exception as e:
-            await ctx.send(f"❌ Error creating backup: {str(e)}")
+            await interaction.response.send_message(f"❌ Error creating backup: {str(e)}", ephemeral=True)
     
-    @commands.command(name='maintenance')
-    @commands.has_permissions(administrator=True)
-    async def maintenance_mode(self, ctx, mode: str = None):
+    @app_commands.command(name="maintenance", description="Toggle maintenance mode")
+    @app_commands.describe(mode="Mode to set: on, off, or leave blank to check status")
+    async def maintenance_mode(self, interaction: discord.Interaction, mode: str = None):
         """Toggle maintenance mode"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to control maintenance mode.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to control maintenance mode.", ephemeral=True)
             return
         
         if mode is None:
@@ -299,7 +296,7 @@ class AdminSystem(commands.Cog):
                 color=Config.COLORS['warning'] if maintenance_status else Config.COLORS['success']
             )
             
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
             return
         
         if mode.lower() in ['on', 'enable', 'true']:
@@ -337,17 +334,17 @@ class AdminSystem(commands.Cog):
             )
             
         else:
-            await ctx.send("❌ Invalid option. Use `on` or `off`.")
+            await interaction.response.send_message("❌ Invalid option. Use `on` or `off`.", ephemeral=True)
             return
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='reload')
-    @commands.has_permissions(administrator=True)
-    async def reload_cog(self, ctx, cog_name: str = None):
+    @app_commands.command(name="reload", description="Reload a specific cog or all cogs")
+    @app_commands.describe(cog_name="Name of the cog to reload (leave blank to reload all)")
+    async def reload_cog(self, interaction: discord.Interaction, cog_name: str = None):
         """Reload a specific cog or all cogs"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to reload cogs.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to reload cogs.", ephemeral=True)
             return
         
         if cog_name is None:
@@ -398,14 +395,13 @@ class AdminSystem(commands.Cog):
                     color=Config.COLORS['error']
                 )
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='shutdown')
-    @commands.has_permissions(administrator=True)
-    async def shutdown_bot(self, ctx):
+    @app_commands.command(name="shutdown", description="Shutdown the bot (Administrator only)")
+    async def shutdown_bot(self, interaction: discord.Interaction):
         """Shutdown the bot (Administrator only)"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You need administrator permissions to shutdown the bot.")
+        if not Config.is_admin([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You need administrator permissions to shutdown the bot.", ephemeral=True)
             return
         
         embed = discord.Embed(
@@ -415,7 +411,7 @@ class AdminSystem(commands.Cog):
             color=Config.COLORS['error']
         )
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         
         # Close the bot
         await self.bot.close()
