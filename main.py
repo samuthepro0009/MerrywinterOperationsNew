@@ -48,6 +48,11 @@ class MerrywinterBot(commands.Bot):
     async def setup_hook(self):
         """Load all cogs and setup the bot"""
         try:
+            # Add global slash commands first
+            self.tree.add_command(discord.app_commands.Command(name='help', description='Display comprehensive help information', callback=help_command))
+            self.tree.add_command(discord.app_commands.Command(name='info', description='Display bot information', callback=info_command))
+            self.tree.add_command(discord.app_commands.Command(name='ping', description='Check bot latency', callback=ping_command))
+            
             # Load all cogs
             cogs = [
                 'cogs.tickets',
@@ -419,11 +424,6 @@ async def ping_command(interaction: discord.Interaction):
 async def main():
     """Main function to run the bot"""
     bot = MerrywinterBot()
-    
-    # Add slash commands
-    bot.tree.add_command(discord.app_commands.Command(name='help', description='Display comprehensive help information', callback=help_command))
-    bot.tree.add_command(discord.app_commands.Command(name='info', description='Display bot information', callback=info_command))
-    bot.tree.add_command(discord.app_commands.Command(name='ping', description='Check bot latency', callback=ping_command))
     
     # Get bot token from environment
     token = os.getenv('DISCORD_TOKEN')
