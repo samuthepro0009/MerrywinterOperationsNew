@@ -1,3 +1,4 @@
+
 """
 Simple Web Dashboard for FROST AI
 Uses Python's built-in HTTP server to provide a web interface
@@ -227,7 +228,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     opacity: 0.5;
                     color: #666;
                     border-color: #666;
-                }</old_str>
+                }
             </style>
         </head>
         <body>
@@ -238,7 +239,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     <div class="subtitle">Fully Responsive Operational Support Technician</div>
                     <div class="subtitle">Merrywinter Security Consulting</div>
                     <div class="subtitle"><span class="status-indicator"></span>System Status: OPERATIONAL</div>
-                </div></div>
+                </div>
                 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -448,7 +449,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     sleep(ms) {
                         return new Promise(resolve => setTimeout(resolve, ms));
                     }
-                }</old_str>
+                }
                 
                 // Initialize terminal audio
                 const terminalAudio = new TerminalAudio();
@@ -501,18 +502,20 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         
                         terminalAudio.playErrorBeep();
                     }
-                }</old_str>
+                }
                 
-                // Add ambient terminal sounds
-                function startAmbientSounds() {
+                // Enhanced ambient sounds with variety
+                function startEnhancedAmbientSounds() {
                     setInterval(() => {
                         const rand = Math.random();
-                        if (rand < 0.15) { // 15% chance for processing sequence
+                        if (rand < 0.1) { // 10% chance for processing sequence
                             terminalAudio.playProcessingSequence();
-                        } else if (rand < 0.25) { // 10% chance for single beep
+                        } else if (rand < 0.18) { // 8% chance for data beep
                             terminalAudio.playDataBeep();
+                        } else if (rand < 0.23) { // 5% chance for system beep
+                            terminalAudio.playSystemBeep();
                         }
-                    }, 8000); // Every 8 seconds
+                    }, 12000); // Every 12 seconds
                 }
                 
                 // Load data on page load
@@ -524,7 +527,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                 }, 2000);
                 
                 // Start enhanced ambient sounds after a delay
-                setTimeout(startEnhancedAmbientSounds, 5000);</old_str>
+                setTimeout(startEnhancedAmbientSounds, 5000);
                 
                 // Refresh data every 30 seconds
                 setInterval(loadDashboardData, 30000);
@@ -557,20 +560,6 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         }
                     });
                 });
-                
-                // Enhanced ambient sounds with variety
-                function startEnhancedAmbientSounds() {
-                    setInterval(() => {
-                        const rand = Math.random();
-                        if (rand < 0.1) { // 10% chance for processing sequence
-                            terminalAudio.playProcessingSequence();
-                        } else if (rand < 0.18) { // 8% chance for data beep
-                            terminalAudio.playDataBeep();
-                        } else if (rand < 0.23) { // 5% chance for system beep
-                            terminalAudio.playSystemBeep();
-                        }
-                    }, 12000); // Every 12 seconds
-                }</old_str>
             </script>
         </body>
         </html>
