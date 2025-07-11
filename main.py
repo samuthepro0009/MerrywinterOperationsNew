@@ -34,7 +34,7 @@ class MerrywinterBot(commands.Bot):
             command_prefix=Config.COMMAND_PREFIX,
             intents=intents,
             help_command=None,
-            description="Merrywinter Security Consulting - Professional PMC Operations Bot"
+            description=f"{Config.AI_FULL_NAME} - Advanced AI Command System"
         )
         
         self.config = Config()
@@ -44,6 +44,13 @@ class MerrywinterBot(commands.Bot):
         # Anti-raid system
         self.recent_joins = []
         self.lockdown_mode = False
+        
+        # AI System status
+        self.ai_status_index = 0
+        self.uptime_start = datetime.utcnow()
+        
+        # Enhanced logging
+        self.moderation_log_channel = None
         
     async def setup_hook(self):
         """Load all cogs and setup the bot"""
@@ -93,6 +100,10 @@ class MerrywinterBot(commands.Bot):
             self.status_update.start()
             self.health_check.start()
             
+            # Start keepalive for 24/7 uptime
+            if Config.ENABLE_KEEPALIVE:
+                self.keepalive.start()
+            
             logger.info("Bot setup completed successfully")
             
         except Exception as e:
@@ -100,26 +111,60 @@ class MerrywinterBot(commands.Bot):
     
     async def on_ready(self):
         """Event triggered when bot is ready"""
-        logger.info(f"🚁 {self.user} has landed! {Config.COMPANY_NAME} is operational.")
-        logger.info(f"Bot is serving {len(self.guilds)} guilds")
-        logger.info(f"Latency: {round(self.latency * 1000)}ms")
-        logger.info(f"Motto: {Config.COMPANY_MOTTO}")
+        # Frost AI startup sequence
+        logger.info("=" * 60)
+        logger.info(f"🤖 {Config.AI_NAME} {Config.AI_VERSION} - INITIALIZING")
+        logger.info(f"System Name: {Config.AI_FULL_NAME}")
+        logger.info(f"Connected as: {self.user}")
+        logger.info(f"Serving {len(self.guilds)} combat zones")
+        logger.info(f"Network latency: {round(self.latency * 1000)}ms")
+        logger.info(f"Mission: {Config.COMPANY_MOTTO}")
         logger.info(f"Established: {Config.COMPANY_ESTABLISHED}")
+        logger.info("=" * 60)
         
-        # Set initial status
+        # Get moderation log channel
+        try:
+            self.moderation_log_channel = self.get_channel(Config.MODERATION_LOG_CHANNEL_ID)
+            if self.moderation_log_channel:
+                logger.info(f"📋 Moderation logging channel acquired: {self.moderation_log_channel.name}")
+        except Exception as e:
+            logger.error(f"Failed to get moderation log channel: {e}")
+        
+        # Set AI status
         await self.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
-                name=f"{Config.COMPANY_MOTTO} | /help"
+                name=f"{Config.AI_STATUS_MESSAGES[2]} | /help"
             ),
             status=discord.Status.online
         )
+        
+        # Send startup message to moderation log
+        if self.moderation_log_channel:
+            embed = discord.Embed(
+                title="🤖 F.R.O.S.T AI SYSTEM ONLINE",
+                description=f"```\n{Config.AI_STATUS_MESSAGES[0]}\n{Config.AI_STATUS_MESSAGES[1]}\n\n{Config.AI_STATUS_MESSAGES[2]}\n{Config.AI_STATUS_MESSAGES[3]}\n```",
+                color=0x00ff41,
+                timestamp=datetime.utcnow()
+            )
+            embed.add_field(name="🌐 Network Status", value=f"Latency: {round(self.latency * 1000)}ms", inline=True)
+            embed.add_field(name="🏢 Combat Zones", value=f"{len(self.guilds)} active", inline=True)
+            embed.add_field(name="⏰ Boot Time", value=f"<t:{int(self.uptime_start.timestamp())}:R>", inline=True)
+            embed.set_footer(text=f"{Config.AI_FULL_NAME} • {Config.AI_VERSION}")
+            
+            try:
+                await self.moderation_log_channel.send(embed=embed)
+            except Exception as e:
+                logger.error(f"Failed to send startup message: {e}")
     
     async def on_member_join(self, member):
-        """Handle member joins with anti-raid protection"""
+        """Handle member joins with anti-raid protection and logging"""
         if not Config.check_guild_authorization(member.guild.id):
             return
-            
+        
+        # Log member join
+        await self.log_member_action(member, "JOIN", f"New member joined the server")
+        
         if Config.ANTI_RAID_ENABLED:
             current_time = datetime.utcnow()
             
@@ -217,16 +262,59 @@ class MerrywinterBot(commands.Bot):
             embed.set_footer(text=f"{Config.COMPANY_NAME} - Professional PMC Operations")
             await guild.system_channel.send(embed=embed)
     
+    async def on_member_remove(self, member):
+        """Handle member leaves"""
+        if not Config.check_guild_authorization(member.guild.id):
+            return
+        
+        # Log member leave
+        await self.log_member_action(member, "LEAVE", f"Member left the server")
+    
+    async def on_message_delete(self, message):
+        """Handle message deletions"""
+        if not Config.check_guild_authorization(message.guild.id):
+            return
+        
+        if message.author.bot:
+            return
+            
+        # Log message deletion
+        await self.log_message_action(message, "DELETE", f"Message deleted")
+    
+    async def on_message_edit(self, before, after):
+        """Handle message edits"""
+        if not Config.check_guild_authorization(before.guild.id):
+            return
+        
+        if before.author.bot or before.content == after.content:
+            return
+            
+        # Log message edit
+        await self.log_message_edit(before, after)
+    
+    async def on_member_ban(self, guild, user):
+        """Handle member bans"""
+        if not Config.check_guild_authorization(guild.id):
+            return
+        
+        await self.log_moderation_action(user, "BAN", "Member was banned", guild)
+    
+    async def on_member_unban(self, guild, user):
+        """Handle member unbans"""
+        if not Config.check_guild_authorization(guild.id):
+            return
+        
+        await self.log_moderation_action(user, "UNBAN", "Member was unbanned", guild)
+    
     @tasks.loop(minutes=5)
     async def status_update(self):
-        """Update bot status periodically"""
+        """Update bot status periodically with FROST AI messages"""
         try:
-            statuses = [
-                "Roblox PMC Operations",
-                f"{len(self.guilds)} Military Installations",
-                "Security Clearance Alpha-Omega",
-                "Operator Status: ACTIVE",
-                "Mission Briefings Available"
+            statuses = Config.AI_STATUS_MESSAGES + [
+                f"Monitoring {len(self.guilds)} Combat Zones",
+                "Threat Assessment: ACTIVE",
+                "Personnel Tracking: ONLINE",
+                "Security Protocols: ENGAGED"
             ]
             
             import random
@@ -243,23 +331,197 @@ class MerrywinterBot(commands.Bot):
         except Exception as e:
             logger.error(f"Error updating status: {e}")
     
-    @tasks.loop(minutes=30)
+    async def log_member_action(self, member, action_type, description):
+        """Log member actions to moderation channel"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"👤 MEMBER {action_type}",
+            color=0x00ff41 if action_type == "JOIN" else 0xff4444,
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Member", value=f"{member.mention} ({member})", inline=False)
+        embed.add_field(name="🆔 User ID", value=f"`{member.id}`", inline=True)
+        embed.add_field(name="📅 Account Created", value=f"<t:{int(member.created_at.timestamp())}:R>", inline=True)
+        
+        if action_type == "JOIN":
+            embed.add_field(name="📊 Member Count", value=f"{member.guild.member_count}", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log member action: {e}")
+    
+    async def log_message_action(self, message, action_type, description):
+        """Log message actions to moderation channel"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"💬 MESSAGE {action_type}",
+            color=0xff4444,
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Author", value=f"{message.author.mention} ({message.author})", inline=False)
+        embed.add_field(name="📍 Channel", value=f"{message.channel.mention}", inline=True)
+        embed.add_field(name="🆔 Message ID", value=f"`{message.id}`", inline=True)
+        
+        # Truncate long messages
+        content = message.content[:1000] + "..." if len(message.content) > 1000 else message.content
+        if content:
+            embed.add_field(name="📝 Content", value=f"```{content}```", inline=False)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log message action: {e}")
+    
+    async def log_message_edit(self, before, after):
+        """Log message edits to moderation channel"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title="✏️ MESSAGE EDITED",
+            color=0xffa500,
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Author", value=f"{before.author.mention} ({before.author})", inline=False)
+        embed.add_field(name="📍 Channel", value=f"{before.channel.mention}", inline=True)
+        embed.add_field(name="🆔 Message ID", value=f"`{before.id}`", inline=True)
+        
+        # Truncate long messages
+        before_content = before.content[:500] + "..." if len(before.content) > 500 else before.content
+        after_content = after.content[:500] + "..." if len(after.content) > 500 else after.content
+        
+        if before_content:
+            embed.add_field(name="📝 Before", value=f"```{before_content}```", inline=False)
+        if after_content:
+            embed.add_field(name="📝 After", value=f"```{after_content}```", inline=False)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log message edit: {e}")
+    
+    async def log_moderation_action(self, user, action_type, reason, guild):
+        """Log moderation actions to moderation channel"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"🔨 MODERATION - {action_type}",
+            color=0xff0000,
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 User", value=f"{user.mention} ({user})", inline=False)
+        embed.add_field(name="🆔 User ID", value=f"`{user.id}`", inline=True)
+        embed.add_field(name="⚖️ Action", value=f"{action_type}", inline=True)
+        embed.add_field(name="📝 Reason", value=reason, inline=False)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log moderation action: {e}")
+    
+    @tasks.loop(minutes=Config.HEALTH_CHECK_INTERVAL)
     async def health_check(self):
-        """Perform health check and log statistics"""
+        """Enhanced health check with 24/7 monitoring"""
         try:
             uptime = datetime.utcnow() - self.start_time
             
-            logger.info(f"Health Check - Uptime: {uptime}, Guilds: {len(self.guilds)}, "
+            logger.info(f"🤖 FROST AI Health Check - Uptime: {uptime}, Guilds: {len(self.guilds)}, "
                        f"Latency: {round(self.latency * 1000)}ms")
             
             # Clean up old data if needed
             await self.storage.cleanup_old_data()
             
+            # Log detailed health status to moderation channel every hour
+            if uptime.total_seconds() % 3600 < Config.HEALTH_CHECK_INTERVAL * 60:
+                await self.log_health_status(uptime)
+            
         except Exception as e:
             logger.error(f"Error during health check: {e}")
+            if Config.AUTO_RESTART_ON_ERROR:
+                logger.info("Attempting to recover from error...")
+                await self.recover_from_error()
+    
+    async def log_health_status(self, uptime):
+        """Log detailed health status to moderation channel"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title="🤖 F.R.O.S.T AI HEALTH STATUS",
+            color=Config.COLORS['frost'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="⏱️ Uptime", value=f"{uptime.days}d {uptime.seconds//3600}h {(uptime.seconds%3600)//60}m", inline=True)
+        embed.add_field(name="🌐 Latency", value=f"{round(self.latency * 1000)}ms", inline=True)
+        embed.add_field(name="🏢 Combat Zones", value=f"{len(self.guilds)}", inline=True)
+        embed.add_field(name="📊 Status", value="OPERATIONAL", inline=True)
+        embed.add_field(name="🛡️ Security", value="ACTIVE", inline=True)
+        embed.add_field(name="📡 Network", value="CONNECTED", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION} • Auto-monitoring active")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log health status: {e}")
+    
+    async def recover_from_error(self):
+        """Attempt to recover from errors"""
+        try:
+            # Try to reconnect
+            if self.is_closed():
+                logger.info("Attempting to reconnect...")
+                await self.connect()
+            
+            # Reset status
+            await self.change_presence(
+                activity=discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name=f"FROST AI RECOVERY MODE | /help"
+                ),
+                status=discord.Status.online
+            )
+            
+            logger.info("Recovery attempt completed")
+        except Exception as e:
+            logger.error(f"Recovery failed: {e}")
+    
+    @tasks.loop(minutes=Config.KEEPALIVE_INTERVAL)
+    async def keepalive(self):
+        """Keep the bot alive for 24/7 uptime on Render"""
+        try:
+            # Send a minimal request to keep the service alive
+            if self.guilds:
+                guild = self.guilds[0]
+                # Just check if we can access the guild
+                await guild.fetch_member(self.user.id)
+                
+            logger.debug("Keepalive ping successful")
+        except Exception as e:
+            logger.error(f"Keepalive failed: {e}")
     
     @status_update.before_loop
     @health_check.before_loop
+    @keepalive.before_loop
     async def before_loops(self):
         """Wait until bot is ready before starting loops"""
         await self.wait_until_ready()

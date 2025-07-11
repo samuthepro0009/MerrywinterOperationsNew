@@ -30,9 +30,11 @@
     "type": "commission",
     "client": 488052909867532288,
     "service_details": "test",
-    "status": "open",
+    "status": "in_progress",
     "created_at": "2025-07-11T21:27:05.939935",
     "guild_id": 1114936846124843008,
-    "channel_id": 1393342864913731646
+    "channel_id": 1393342864913731646,
+    "updated_by": 488052909867532288,
+    "updated_at": "2025-07-11T21:51:15.006784"
   }
 }

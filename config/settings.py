@@ -20,6 +20,18 @@ class Config:
     COMPANY_ESTABLISHED = "Est. 2025"
     COMPANY_FOUNDERS = ["Rev", "Samu", "Fraa", "Luca"]
     
+    # AI System Information (FROST AI)
+    AI_NAME = "F.R.O.S.T"
+    AI_FULL_NAME = "Fully Responsive Operational Support Technician"
+    AI_VERSION = "v2.5.7"
+    AI_STATUS_MESSAGES = [
+        "█▀▀ ▀█▀ ▄▀█ ▀█▀ █░█ █▀   █▀█ █▄░█ █░░ █ █▄░█ █▀▀",
+        "▄▄▄ ░█░ █▀█ ░█░ █▄█ ▄█   █▄█ █░▀█ █▄▄ █ █░▀█ ██▄",
+        "FROST AI v2.5.7 - OPERATIONAL",
+        "All systems nominal • Threat level: GREEN",
+        "Monitoring personnel • Scanning for anomalies"
+    ]
+    
     # Security Clearance Levels (Based on organizational sections)
     SECURITY_LEVELS = {
         'EXECUTIVE_COMMAND': 10,        # Executive Command
@@ -90,6 +102,32 @@ class Config:
     # Channel IDs from the guild
     TICKET_CATEGORY_ID = 1393249646192754698
     LOG_CHANNEL_ID = 1393249520388935793
+    
+    # Moderation Logging Channel (for comprehensive logs)
+    MODERATION_LOG_CHANNEL_ID = 1393349090431205456
+    
+    # Colors for embeds (FROST AI theme)
+    COLORS = {
+        'primary': 0x00ff41,        # Matrix green
+        'secondary': 0x0099ff,      # Blue
+        'success': 0x00ff00,        # Green
+        'warning': 0xffa500,        # Orange
+        'error': 0xff0000,          # Red
+        'info': 0x00ffff,           # Cyan
+        'frost': 0x00ff41           # FROST signature color
+    }
+    
+    # 24/7 Uptime Configuration
+    ENABLE_KEEPALIVE = True
+    KEEPALIVE_INTERVAL = 30  # minutes
+    HEALTH_CHECK_INTERVAL = 15  # minutes
+    AUTO_RESTART_ON_ERROR = True
+    
+    # Guild authorization check
+    @staticmethod
+    def check_guild_authorization(guild_id):
+        """Check if guild is authorized to use the bot"""
+        return guild_id == Config.AUTHORIZED_GUILD_ID
     
 
     
