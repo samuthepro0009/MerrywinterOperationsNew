@@ -1,0 +1,18 @@
+{
+  "_info": {
+    "description": "Ticket system storage for Merrywinter Security Consulting",
+    "version": "1.0.0",
+    "created": "2024-01-01T00:00:00Z",
+    "structure": {
+      "ticket_id": {
+        "id": "unique_ticket_id",
+        "type": "report-operator|commission|tech-issue",
+        "reporter": "user_id",
+        "status": "open|closed|auto_closed",
+        "created_at": "ISO datetime",
+        "guild_id": "guild_id",
+        "channel_id": "channel_id or null"
+      }
+    }
+  }
+}

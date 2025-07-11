@@ -1,0 +1,22 @@
+{
+  "_info": {
+    "description": "Operator management storage for Merrywinter Security Consulting",
+    "version": "1.0.0",
+    "created": "2024-01-01T00:00:00Z",
+    "structure": {
+      "user_id": {
+        "user_id": "discord_user_id",
+        "promotions": [
+          {
+            "old_clearance": "previous_clearance",
+            "new_clearance": "new_clearance",
+            "authorized_by": "authorizing_user_id",
+            "timestamp": "ISO datetime"
+          }
+        ],
+        "total_missions": "number",
+        "commendations": "number"
+      }
+    }
+  }
+}

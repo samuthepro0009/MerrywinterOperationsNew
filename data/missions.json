@@ -1,0 +1,19 @@
+{
+  "_info": {
+    "description": "Mission operations storage for Merrywinter Security Consulting",
+    "version": "1.0.0",
+    "created": "2024-01-01T00:00:00Z",
+    "structure": {
+      "mission_id": {
+        "mission_id": "unique_mission_id",
+        "operator_id": "discord_user_id",
+        "mission_type": "mission_type_name",
+        "sector": "operation_sector",
+        "objectives": "mission_objectives_text",
+        "status": "briefed|active|completed",
+        "created_at": "ISO datetime",
+        "guild_id": "guild_id"
+      }
+    }
+  }
+}
