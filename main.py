@@ -87,7 +87,8 @@ class MerrywinterBot(commands.Bot):
                 'cogs.performance_metrics',
                 'cogs.training_schedule',
                 'cogs.smart_notifications',
-                'cogs.roblox_integration'
+                'cogs.roblox_integration',
+                'cogs.game_monitoring'
             ]
 
             for cog in cogs:

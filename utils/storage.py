@@ -7,7 +7,7 @@ import json
 import os
 import aiofiles
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 
 class Storage:
@@ -22,6 +22,9 @@ class Storage:
         self.deployments_file = f'{self.data_dir}/deployments.json'
         self.operations_file = f'{self.data_dir}/operations.json'
         self.operation_logs_file = f'{self.data_dir}/operation_logs.json'
+        self.roblox_links_file = f'{self.data_dir}/roblox_links.json'
+        self.game_monitoring_file = f'{self.data_dir}/game_monitoring.json'
+        self.game_status_log_file = f'{self.data_dir}/game_status_log.json'
         
         self._ensure_data_directory()
         self._lock = asyncio.Lock()
@@ -317,3 +320,56 @@ class Storage:
             await f.write(json.dumps(backup_data, indent=2))
         
         return backup_path
+    
+    # Game Monitoring Methods
+    async def save_game_monitoring_config(self, config):
+        """Save game monitoring configuration"""
+        async with self._lock:
+            await self._save_json(self.game_monitoring_file, config)
+    
+    async def load_game_monitoring_config(self):
+        """Load game monitoring configuration"""
+        return await self._load_json(self.game_monitoring_file)
+    
+    async def append_game_status_log(self, status_entry):
+        """Append a new status entry to the game status log"""
+        async with self._lock:
+            log_data = await self._load_json(self.game_status_log_file)
+            
+            # Initialize log structure if needed
+            if 'entries' not in log_data:
+                log_data = {
+                    'entries': [],
+                    'created_at': datetime.utcnow().isoformat(),
+                    'last_updated': datetime.utcnow().isoformat()
+                }
+            
+            # Add new entry
+            log_data['entries'].append(status_entry)
+            log_data['last_updated'] = datetime.utcnow().isoformat()
+            
+            # Keep only last 1000 entries to prevent file from growing too large
+            if len(log_data['entries']) > 1000:
+                log_data['entries'] = log_data['entries'][-1000:]
+            
+            await self._save_json(self.game_status_log_file, log_data)
+    
+    async def get_game_status_history(self, hours: int = 24):
+        """Get game status history for the specified number of hours"""
+        log_data = await self._load_json(self.game_status_log_file)
+        if 'entries' not in log_data:
+            return []
+        
+        # Filter entries from the last N hours
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        filtered_entries = []
+        
+        for entry in log_data['entries']:
+            try:
+                entry_time = datetime.fromisoformat(entry['timestamp'])
+                if entry_time >= cutoff_time:
+                    filtered_entries.append(entry)
+            except:
+                continue
+        
+        return filtered_entries
