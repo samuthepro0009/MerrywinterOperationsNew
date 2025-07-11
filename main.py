@@ -802,8 +802,14 @@ class MerrywinterBot(commands.Bot):
             await self.storage.cleanup_old_data()
 
             # Update bot statistics
+            # Format uptime as HH:MM:SS
+            hours = int(uptime.total_seconds() // 3600)
+            minutes = int((uptime.total_seconds() % 3600) // 60)
+            seconds = int(uptime.total_seconds() % 60)
+            uptime_formatted = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            
             self.bot_stats = {
-                'uptime': str(uptime),
+                'uptime': uptime_formatted,
                 'guilds': len(self.guilds),
                 'users': len(self.users),
                 'latency': round(self.latency * 1000),
