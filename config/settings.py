@@ -74,6 +74,8 @@ class Config:
     TICKET_CATEGORY = os.getenv('TICKET_CATEGORY', 'Support Tickets')
     LOG_CHANNEL = os.getenv('LOG_CHANNEL', 'bot-logs')
     
+
+    
     # High Command Operations Channels
     DEPLOYMENT_CHANNEL_ID = int(os.getenv('DEPLOYMENT_CHANNEL_ID', '0')) if os.getenv('DEPLOYMENT_CHANNEL_ID') else None
     OPERATION_START_CHANNEL_ID = int(os.getenv('OPERATION_START_CHANNEL_ID', '0')) if os.getenv('OPERATION_START_CHANNEL_ID') else None

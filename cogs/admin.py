@@ -169,7 +169,7 @@ class AdminSystem(commands.Cog):
     
     @commands.command(name='stats')
     @commands.has_permissions(manage_guild=True)
-    async def bot_statistics(self, ctx):
+    async def statistics(self, ctx):
         """Display bot statistics"""
         if not Config.is_admin([role.name for role in ctx.author.roles]):
             await ctx.send("❌ You need administrator permissions to view bot statistics.")
