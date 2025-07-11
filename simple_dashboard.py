@@ -300,6 +300,113 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
             </div>
             
             <script>
+                // Morse code sound system
+                class MorseCodeAudio {
+                    constructor() {
+                        this.audioContext = null;
+                        this.isPlaying = false;
+                        this.morseMessages = [
+                            'FROST AI',
+                            'OPERATIONAL',
+                            'SECURE',
+                            'MONITORING',
+                            'ACTIVE',
+                            'SYSTEM OK',
+                            'NETWORK STABLE',
+                            'ALL CLEAR'
+                        ];
+                        this.morseCode = {
+                            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
+                            'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
+                            'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
+                            'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+                            'Y': '-.--', 'Z': '--..', ' ': '/'
+                        };
+                        this.initAudio();
+                    }
+                    
+                    initAudio() {
+                        try {
+                            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        } catch (e) {
+                            console.log('Audio context not supported');
+                        }
+                    }
+                    
+                    playBeep(duration, frequency = 800) {
+                        if (!this.audioContext) return;
+                        
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+                        
+                        oscillator.frequency.value = frequency;
+                        oscillator.type = 'sine';
+                        
+                        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+                        
+                        oscillator.start(this.audioContext.currentTime);
+                        oscillator.stop(this.audioContext.currentTime + duration);
+                    }
+                    
+                    async playMorseCode(text) {
+                        if (this.isPlaying) return;
+                        this.isPlaying = true;
+                        
+                        const dotDuration = 0.1;
+                        const dashDuration = 0.3;
+                        const pauseDuration = 0.1;
+                        const letterPause = 0.3;
+                        const wordPause = 0.7;
+                        
+                        for (let char of text.toUpperCase()) {
+                            if (this.morseCode[char]) {
+                                const morse = this.morseCode[char];
+                                
+                                if (morse === '/') {
+                                    await this.sleep(wordPause * 1000);
+                                } else {
+                                    for (let symbol of morse) {
+                                        if (symbol === '.') {
+                                            this.playBeep(dotDuration);
+                                            await this.sleep(dotDuration * 1000);
+                                        } else if (symbol === '-') {
+                                            this.playBeep(dashDuration);
+                                            await this.sleep(dashDuration * 1000);
+                                        }
+                                        await this.sleep(pauseDuration * 1000);
+                                    }
+                                    await this.sleep(letterPause * 1000);
+                                }
+                            }
+                        }
+                        
+                        this.isPlaying = false;
+                    }
+                    
+                    sleep(ms) {
+                        return new Promise(resolve => setTimeout(resolve, ms));
+                    }
+                    
+                    playRandomMessage() {
+                        const message = this.morseMessages[Math.floor(Math.random() * this.morseMessages.length)];
+                        this.playMorseCode(message);
+                    }
+                }
+                
+                // Initialize morse code audio
+                const morseAudio = new MorseCodeAudio();
+                
+                // Add click listener to enable audio context
+                document.addEventListener('click', () => {
+                    if (morseAudio.audioContext && morseAudio.audioContext.state === 'suspended') {
+                        morseAudio.audioContext.resume();
+                    }
+                }, { once: true });
+                
                 // Load dashboard data
                 async function loadDashboardData() {
                     try {
@@ -311,6 +418,11 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         document.getElementById('guilds').textContent = data.guilds || 0;
                         document.getElementById('commands').textContent = data.commands_executed || 0;
                         
+                        // Play morse code occasionally when data updates
+                        if (Math.random() < 0.3) {
+                            morseAudio.playRandomMessage();
+                        }
+                        
                     } catch (error) {
                         console.error('Error loading dashboard data:', error);
                         document.getElementById('uptime').textContent = 'Error';
@@ -320,11 +432,35 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     }
                 }
                 
+                // Add ambient morse code sounds
+                function startAmbientMorse() {
+                    setInterval(() => {
+                        if (Math.random() < 0.2) { // 20% chance every interval
+                            morseAudio.playRandomMessage();
+                        }
+                    }, 15000); // Every 15 seconds
+                }
+                
                 // Load data on page load
                 loadDashboardData();
                 
+                // Start ambient sounds after a delay
+                setTimeout(startAmbientMorse, 5000);
+                
                 // Refresh data every 30 seconds
                 setInterval(loadDashboardData, 30000);
+                
+                // Add click sound effects
+                document.addEventListener('click', () => {
+                    morseAudio.playBeep(0.05, 600);
+                });
+                
+                // Add hover sound effects for cards
+                document.querySelectorAll('.stat-card, .feature-card').forEach(card => {
+                    card.addEventListener('mouseenter', () => {
+                        morseAudio.playBeep(0.03, 400);
+                    });
+                });
             </script>
         </body>
         </html>
