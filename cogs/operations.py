@@ -20,7 +20,7 @@ class PMCOperations(commands.Cog):
         self.storage = Storage()
     
     @commands.command(name='mission')
-    async def mission_briefing(self, ctx, mission_type: str = None):
+    async def mission_briefing(self, ctx, mission_type: str = None, classified: bool = False):
         """Get mission briefing or create new mission"""
         user_clearance = get_user_clearance(ctx.author.roles)
         
@@ -56,17 +56,33 @@ class PMCOperations(commands.Cog):
             await ctx.send("❌ Invalid mission type. Use `!mission` to see available types.")
             return
         
+        # Check if classified mission requires higher clearance
+        if classified and not Config.has_permission(user_clearance, 'BETA'):
+            await ctx.send("❌ You need BETA+ clearance to access classified missions.")
+            return
+        
         # Generate mission details
         sector = random.choice(Config.OPERATION_SECTORS)
         mission_id = f"MSC-{random.randint(1000, 9999)}"
         objectives = self.generate_mission_objectives(mission_name)
         
+        # Handle classified missions
+        if classified:
+            title = f"🎯 [CLASSIFIED] MISSION BRIEFING - {mission_name.upper()}"
+            operator_info = f"**Operator:** authorized by: **[RESTRICTED]**"
+            classification_note = f"\n🔒 **CLASSIFIED MISSION**\n*Access restricted to BETA+ clearance only*"
+        else:
+            title = f"🎯 MISSION BRIEFING - {mission_name.upper()}"
+            operator_info = f"**Operator:** {ctx.author.mention}"
+            classification_note = ""
+        
         embed = discord.Embed(
-            title=f"🎯 MISSION BRIEFING - {mission_name.upper()}",
+            title=title,
             description=f"**Mission ID:** {mission_id}\n"
-                       f"**Operator:** {ctx.author.mention}\n"
+                       f"{operator_info}\n"
                        f"**Clearance Level:** {user_clearance}\n"
-                       f"**Deployment Sector:** {sector}",
+                       f"**Deployment Sector:** {sector}"
+                       f"{classification_note}",
             color=Config.COLORS['info']
         )
         
@@ -105,6 +121,7 @@ class PMCOperations(commands.Cog):
             'mission_type': mission_name,
             'sector': sector,
             'objectives': objectives,
+            'classified': classified,
             'status': 'briefed',
             'created_at': datetime.utcnow().isoformat(),
             'guild_id': ctx.guild.id

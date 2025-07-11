@@ -33,7 +33,8 @@ class HighCommand(commands.Cog):
         sector="Operation sector for deployment",
         units="Number of units to deploy",
         mission_type="Type of mission for deployment",
-        priority="Priority level of deployment"
+        priority="Priority level of deployment",
+        classified="Mark as classified operation (Executive Command only)"
     )
     @app_commands.choices(
         sector=[
@@ -59,13 +60,18 @@ class HighCommand(commands.Cog):
             app_commands.Choice(name="Low", value="low")
         ]
     )
-    async def deployment(self, interaction: discord.Interaction, sector: str, units: int, mission_type: str, priority: str):
+    async def deployment(self, interaction: discord.Interaction, sector: str, units: int, mission_type: str, priority: str, classified: bool = False):
         """Deploy units to operational sectors"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Director+ clearance
         if not Config.has_permission(user_clearance, 'DIRECTOR_SECURITY'):
             await interaction.response.send_message("❌ You need Director+ clearance to authorize deployments.", ephemeral=True)
+            return
+        
+        # Check if classified operation requires Executive Command clearance
+        if classified and not Config.has_permission(user_clearance, 'EXECUTIVE_COMMAND'):
+            await interaction.response.send_message("❌ Only Executive Command can authorize classified operations.", ephemeral=True)
             return
         
         # Check if deployment channel is configured
@@ -107,12 +113,23 @@ class HighCommand(commands.Cog):
             "low": 0x00FF00
         }
         
+        # Handle classified operations
+        if classified:
+            title = "🚁 [CLASSIFIED] DEPLOYMENT AUTHORIZATION"
+            authorized_by = "authorized by: **[RESTRICTED]**"
+            classification_note = "\n🔒 **CLASSIFIED OPERATION**\n*Access restricted to Executive Command personnel only*"
+        else:
+            title = "🚁 DEPLOYMENT AUTHORIZATION"
+            authorized_by = f"**Authorized By:** {interaction.user.mention}"
+            classification_note = ""
+        
         embed = discord.Embed(
-            title="🚁 DEPLOYMENT AUTHORIZATION",
+            title=title,
             description=f"**Deployment ID:** {deployment_id}\n"
-                       f"**Authorized By:** {interaction.user.mention}\n"
+                       f"{authorized_by}\n"
                        f"**Clearance Level:** {user_clearance}\n"
-                       f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+                       f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                       f"{classification_note}",
             color=priority_colors.get(priority, 0xFFFF00)
         )
         
@@ -155,6 +172,7 @@ class HighCommand(commands.Cog):
             'units': units,
             'mission_type': mission_type,
             'priority': priority,
+            'classified': classified,
             'status': 'deployed',
             'timestamp': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id
@@ -169,15 +187,21 @@ class HighCommand(commands.Cog):
         operation_name="Name of the operation",
         objective="Primary objective of the operation",
         participants="Number of participants",
-        duration="Expected duration in hours"
+        duration="Expected duration in hours",
+        classified="Mark as classified operation (Executive Command only)"
     )
-    async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int):
+    async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int, classified: bool = False):
         """Start a new operation"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Chief+ clearance
         if not Config.has_permission(user_clearance, 'CHIEF_OPERATIONS'):
             await interaction.response.send_message("❌ You need Chief+ clearance to start operations.", ephemeral=True)
+            return
+        
+        # Check if classified operation requires Executive Command clearance
+        if classified and not Config.has_permission(user_clearance, 'EXECUTIVE_COMMAND'):
+            await interaction.response.send_message("❌ Only Executive Command can authorize classified operations.", ephemeral=True)
             return
         
         # Check if operation start channel is configured
@@ -193,13 +217,24 @@ class HighCommand(commands.Cog):
         # Generate operation ID
         operation_id = f"OP-{random.randint(1000, 9999)}"
         
+        # Handle classified operations
+        if classified:
+            title = "🎯 [CLASSIFIED] OPERATION COMMENCED"
+            commanding_officer = "**Commanding Officer:** authorized by: **[RESTRICTED]**"
+            classification_note = "\n🔒 **CLASSIFIED OPERATION**\n*Access restricted to Executive Command personnel only*"
+        else:
+            title = "🎯 OPERATION COMMENCED"
+            commanding_officer = f"**Commanding Officer:** {interaction.user.mention}"
+            classification_note = ""
+        
         # Create operation embed
         embed = discord.Embed(
-            title="🎯 OPERATION COMMENCED",
+            title=title,
             description=f"**Operation Name:** {operation_name}\n"
                        f"**Operation ID:** {operation_id}\n"
-                       f"**Commanding Officer:** {interaction.user.mention}\n"
-                       f"**Clearance Level:** {user_clearance}",
+                       f"{commanding_officer}\n"
+                       f"**Clearance Level:** {user_clearance}"
+                       f"{classification_note}",
             color=0x00FF00
         )
         
@@ -242,6 +277,7 @@ class HighCommand(commands.Cog):
             'objective': objective,
             'participants': participants,
             'duration': duration,
+            'classified': classified,
             'status': 'active',
             'start_time': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id
