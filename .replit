@@ -4,7 +4,7 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Dashboard + Bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -35,6 +35,19 @@ author = "agent"
 task = "shell.exec"
 args = "python simple_dashboard.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Dashboard + Bot"
+author = 44915787
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python simple_dashboard.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 5000

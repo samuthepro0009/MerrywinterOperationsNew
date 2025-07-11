@@ -187,15 +187,58 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     color: #ff4444;
                     text-align: center;
                 }
+                
+                .status-indicator {
+                    display: inline-block;
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    background-color: #00ff41;
+                    box-shadow: 0 0 10px #00ff41;
+                    animation: pulse 2s infinite;
+                    margin-right: 8px;
+                }
+                
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                    100% { opacity: 1; }
+                }
+                
+                .sound-control {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(0, 255, 65, 0.1);
+                    border: 1px solid #00ff41;
+                    color: #00ff41;
+                    padding: 10px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+                
+                .sound-control:hover {
+                    background: rgba(0, 255, 65, 0.2);
+                    transform: scale(1.05);
+                }
+                
+                .sound-control.muted {
+                    opacity: 0.5;
+                    color: #666;
+                    border-color: #666;
+                }</old_str>
             </style>
         </head>
         <body>
+            <button class="sound-control" id="soundToggle" onclick="toggleSound()">🔊 Sound: ON</button>
             <div class="container">
                 <div class="header">
                     <h1>🤖 F.R.O.S.T AI</h1>
                     <div class="subtitle">Fully Responsive Operational Support Technician</div>
                     <div class="subtitle">Merrywinter Security Consulting</div>
-                </div>
+                    <div class="subtitle"><span class="status-indicator"></span>System Status: OPERATIONAL</div>
+                </div></div>
                 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -300,11 +343,12 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
             </div>
             
             <script>
-                // Retro Computer Terminal Audio System
+                // Enhanced Retro Terminal Audio System
                 class TerminalAudio {
                     constructor() {
                         this.audioContext = null;
                         this.isPlaying = false;
+                        this.enabled = true;
                         this.initAudio();
                     }
                     
@@ -317,7 +361,7 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     }
                     
                     playBeep(duration = 0.05, frequency = 1200, volume = 0.05) {
-                        if (!this.audioContext) return;
+                        if (!this.audioContext || !this.enabled) return;
                         
                         const oscillator = this.audioContext.createOscillator();
                         const gainNode = this.audioContext.createGain();
@@ -359,12 +403,14 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         if (this.isPlaying) return;
                         this.isPlaying = true;
                         
-                        // Startup beep sequence
-                        this.playBeep(0.1, 1000, 0.03);
-                        await this.sleep(150);
-                        this.playBeep(0.1, 1200, 0.03);
-                        await this.sleep(150);
-                        this.playBeep(0.15, 1500, 0.04);
+                        // Retro computer startup sequence
+                        this.playBeep(0.08, 600, 0.04);  // Low tone
+                        await this.sleep(120);
+                        this.playBeep(0.08, 800, 0.04);  // Mid tone  
+                        await this.sleep(120);
+                        this.playBeep(0.12, 1200, 0.05); // High tone
+                        await this.sleep(200);
+                        this.playBeep(0.15, 1600, 0.06); // Success tone
                         
                         this.isPlaying = false;
                     }
@@ -373,10 +419,10 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         if (this.isPlaying) return;
                         this.isPlaying = true;
                         
-                        // Processing sequence: 3 quick beeps
-                        for (let i = 0; i < 3; i++) {
-                            this.playBeep(0.03, 1800 + (i * 200), 0.02);
-                            await this.sleep(80);
+                        // Data processing sequence: rapid beeps
+                        for (let i = 0; i < 4; i++) {
+                            this.playBeep(0.03, 1400 + (i * 100), 0.025);
+                            await this.sleep(60);
                         }
                         
                         this.isPlaying = false;
@@ -384,13 +430,25 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     
                     async playStatusUpdate() {
                         // Single status update beep
-                        this.playBeep(0.06, 1400, 0.03);
+                        this.playBeep(0.06, 1000, 0.03);
+                    }
+                    
+                    async playNetworkActivity() {
+                        // Network activity sound
+                        this.playBeep(0.04, 1800, 0.02);
+                        await this.sleep(50);
+                        this.playBeep(0.04, 1600, 0.02);
+                    }
+                    
+                    toggleSound() {
+                        this.enabled = !this.enabled;
+                        return this.enabled;
                     }
                     
                     sleep(ms) {
                         return new Promise(resolve => setTimeout(resolve, ms));
                     }
-                }
+                }</old_str>
                 
                 // Initialize terminal audio
                 const terminalAudio = new TerminalAudio();
@@ -408,24 +466,42 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         const response = await fetch('/api/stats');
                         const data = await response.json();
                         
-                        document.getElementById('uptime').textContent = data.uptime || 'Unknown';
+                        // Format uptime nicely
+                        const uptime = data.uptime || 'Unknown';
+                        document.getElementById('uptime').textContent = uptime;
                         document.getElementById('latency').textContent = (data.latency || 0) + 'ms';
                         document.getElementById('guilds').textContent = data.guilds || 0;
                         document.getElementById('commands').textContent = data.commands_executed || 0;
                         
-                        // Play terminal beep when data updates
-                        if (Math.random() < 0.4) {
-                            terminalAudio.playStatusUpdate();
+                        // Update status indicator
+                        const statusIndicator = document.querySelector('.status-indicator');
+                        if (statusIndicator) {
+                            statusIndicator.style.backgroundColor = '#00ff41';
+                            statusIndicator.style.boxShadow = '0 0 10px #00ff41';
+                        }
+                        
+                        // Play network activity sound
+                        if (Math.random() < 0.3) {
+                            terminalAudio.playNetworkActivity();
                         }
                         
                     } catch (error) {
                         console.error('Error loading dashboard data:', error);
-                        document.getElementById('uptime').textContent = 'Error';
-                        document.getElementById('latency').textContent = 'Error';
-                        document.getElementById('guilds').textContent = 'Error';
-                        document.getElementById('commands').textContent = 'Error';
+                        document.getElementById('uptime').textContent = 'Connection Error';
+                        document.getElementById('latency').textContent = 'N/A';
+                        document.getElementById('guilds').textContent = 'N/A';
+                        document.getElementById('commands').textContent = 'N/A';
+                        
+                        // Update status indicator to error state
+                        const statusIndicator = document.querySelector('.status-indicator');
+                        if (statusIndicator) {
+                            statusIndicator.style.backgroundColor = '#ff4444';
+                            statusIndicator.style.boxShadow = '0 0 10px #ff4444';
+                        }
+                        
+                        terminalAudio.playErrorBeep();
                     }
-                }
+                }</old_str>
                 
                 // Add ambient terminal sounds
                 function startAmbientSounds() {
@@ -447,8 +523,8 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     terminalAudio.playStartupSequence();
                 }, 2000);
                 
-                // Start ambient sounds after a delay
-                setTimeout(startAmbientSounds, 5000);
+                // Start enhanced ambient sounds after a delay
+                setTimeout(startEnhancedAmbientSounds, 5000);</old_str>
                 
                 // Refresh data every 30 seconds
                 setInterval(loadDashboardData, 30000);
@@ -458,12 +534,43 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                     terminalAudio.playKeyClick();
                 });
                 
+                // Sound control function
+                function toggleSound() {
+                    const isEnabled = terminalAudio.toggleSound();
+                    const button = document.getElementById('soundToggle');
+                    
+                    if (isEnabled) {
+                        button.textContent = '🔊 Sound: ON';
+                        button.classList.remove('muted');
+                        terminalAudio.playSystemBeep();
+                    } else {
+                        button.textContent = '🔇 Sound: OFF';
+                        button.classList.add('muted');
+                    }
+                }
+                
                 // Add hover sound effects for cards
                 document.querySelectorAll('.stat-card, .feature-card').forEach(card => {
                     card.addEventListener('mouseenter', () => {
-                        terminalAudio.playSystemBeep();
+                        if (Math.random() < 0.6) { // 60% chance for hover sound
+                            terminalAudio.playKeyClick();
+                        }
                     });
                 });
+                
+                // Enhanced ambient sounds with variety
+                function startEnhancedAmbientSounds() {
+                    setInterval(() => {
+                        const rand = Math.random();
+                        if (rand < 0.1) { // 10% chance for processing sequence
+                            terminalAudio.playProcessingSequence();
+                        } else if (rand < 0.18) { // 8% chance for data beep
+                            terminalAudio.playDataBeep();
+                        } else if (rand < 0.23) { // 5% chance for system beep
+                            terminalAudio.playSystemBeep();
+                        }
+                    }, 12000); // Every 12 seconds
+                }</old_str>
             </script>
         </body>
         </html>

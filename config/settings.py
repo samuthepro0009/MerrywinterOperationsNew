@@ -115,7 +115,7 @@ class Config:
         'error': 0xff0000,          # Red
         'info': 0x00ffff,           # Cyan
         'frost': 0x00ff41           # FROST signature color
-    }
+    }</old_str>
     
     # 24/7 Uptime Configuration
     ENABLE_KEEPALIVE = True
