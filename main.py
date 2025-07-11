@@ -52,6 +52,21 @@ class MerrywinterBot(commands.Bot):
         # Enhanced logging
         self.moderation_log_channel = None
         
+        # Advanced tracking systems
+        self.voice_tracking = {}
+        self.reaction_tracking = {}
+        self.nickname_history = {}
+        self.role_change_history = {}
+        self.invite_tracking = {}
+        self.warning_points = {}
+        self.command_usage_stats = {}
+        self.performance_metrics = {}
+        self.training_schedules = {}
+        self.notification_queue = []
+        self.mass_action_tracking = {}
+        self.bot_stats = {}
+        self.storage = Storage()
+        
     async def setup_hook(self):
         """Load all cogs and setup the bot"""
         try:
@@ -67,7 +82,12 @@ class MerrywinterBot(commands.Bot):
                 'cogs.operations',
                 'cogs.moderation',
                 'cogs.admin',
-                'cogs.high_command'
+                'cogs.high_command',
+                'cogs.advanced_moderation',
+                'cogs.performance_metrics',
+                'cogs.training_schedule',
+                'cogs.smart_notifications',
+                'cogs.roblox_integration'
             ]
             
             for cog in cogs:
@@ -306,6 +326,89 @@ class MerrywinterBot(commands.Bot):
         
         await self.log_moderation_action(user, "UNBAN", "Member was unbanned", guild)
     
+    async def on_voice_state_update(self, member, before, after):
+        """Handle voice channel state changes"""
+        if not Config.check_guild_authorization(member.guild.id):
+            return
+        
+        # Voice channel join
+        if before.channel is None and after.channel is not None:
+            await self.log_voice_activity(member, "JOIN", after.channel)
+        # Voice channel leave
+        elif before.channel is not None and after.channel is None:
+            await self.log_voice_activity(member, "LEAVE", before.channel)
+        # Voice channel move
+        elif before.channel != after.channel and before.channel is not None and after.channel is not None:
+            await self.log_voice_activity(member, "MOVE", after.channel, before.channel)
+    
+    async def on_raw_reaction_add(self, payload):
+        """Handle reaction additions"""
+        if not Config.check_guild_authorization(payload.guild_id):
+            return
+        
+        guild = self.get_guild(payload.guild_id)
+        if guild:
+            await self.log_reaction_activity(payload, "ADD", guild)
+    
+    async def on_raw_reaction_remove(self, payload):
+        """Handle reaction removals"""
+        if not Config.check_guild_authorization(payload.guild_id):
+            return
+        
+        guild = self.get_guild(payload.guild_id)
+        if guild:
+            await self.log_reaction_activity(payload, "REMOVE", guild)
+    
+    async def on_member_update(self, before, after):
+        """Handle member updates (nickname, roles, etc.)"""
+        if not Config.check_guild_authorization(after.guild.id):
+            return
+        
+        # Nickname change
+        if before.nick != after.nick:
+            await self.log_nickname_change(before, after)
+        
+        # Role changes
+        if before.roles != after.roles:
+            await self.log_role_changes(before, after)
+    
+    async def on_guild_channel_create(self, channel):
+        """Handle channel creation"""
+        if not Config.check_guild_authorization(channel.guild.id):
+            return
+        
+        await self.log_channel_activity(channel, "CREATE")
+    
+    async def on_guild_channel_delete(self, channel):
+        """Handle channel deletion"""
+        if not Config.check_guild_authorization(channel.guild.id):
+            return
+        
+        await self.log_channel_activity(channel, "DELETE")
+    
+    async def on_invite_create(self, invite):
+        """Handle invite creation"""
+        if not Config.check_guild_authorization(invite.guild.id):
+            return
+        
+        await self.log_invite_activity(invite, "CREATE")
+    
+    async def on_invite_delete(self, invite):
+        """Handle invite deletion"""
+        if not Config.check_guild_authorization(invite.guild.id):
+            return
+        
+        await self.log_invite_activity(invite, "DELETE")
+    
+    async def on_guild_update(self, before, after):
+        """Handle server boosts and other guild updates"""
+        if not Config.check_guild_authorization(after.id):
+            return
+        
+        # Server boost detection
+        if before.premium_subscription_count != after.premium_subscription_count:
+            await self.log_server_boost(before, after)
+    
     @tasks.loop(minutes=5)
     async def status_update(self):
         """Update bot status periodically with FROST AI messages"""
@@ -437,6 +540,255 @@ class MerrywinterBot(commands.Bot):
         except Exception as e:
             logger.error(f"Failed to log moderation action: {e}")
     
+    async def log_voice_activity(self, member, action_type, channel, previous_channel=None):
+        """Log voice channel activity"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"🎤 VOICE {action_type}",
+            color=Config.COLORS['info'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Member", value=f"{member.mention} ({member})", inline=False)
+        embed.add_field(name="🔊 Channel", value=f"{channel.mention}", inline=True)
+        
+        if previous_channel and action_type == "MOVE":
+            embed.add_field(name="📍 From", value=f"{previous_channel.mention}", inline=True)
+        
+        embed.add_field(name="👥 Channel Members", value=f"{len(channel.members)}", inline=True)
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log voice activity: {e}")
+    
+    async def log_reaction_activity(self, payload, action_type, guild):
+        """Log reaction activity"""
+        if not self.moderation_log_channel:
+            return
+        
+        try:
+            channel = guild.get_channel(payload.channel_id)
+            user = guild.get_member(payload.user_id)
+            
+            if not channel or not user or user.bot:
+                return
+            
+            embed = discord.Embed(
+                title=f"👍 REACTION {action_type}",
+                color=Config.COLORS['secondary'],
+                timestamp=datetime.utcnow()
+            )
+            
+            embed.add_field(name="👤 User", value=f"{user.mention} ({user})", inline=False)
+            embed.add_field(name="📍 Channel", value=f"{channel.mention}", inline=True)
+            embed.add_field(name="🎭 Emoji", value=f"{payload.emoji}", inline=True)
+            embed.add_field(name="📝 Message ID", value=f"`{payload.message_id}`", inline=True)
+            embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+            
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log reaction activity: {e}")
+    
+    async def log_nickname_change(self, before, after):
+        """Log nickname changes"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title="🏷️ NICKNAME CHANGE",
+            color=Config.COLORS['warning'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Member", value=f"{after.mention} ({after})", inline=False)
+        embed.add_field(name="📝 Before", value=f"{before.nick or 'No nickname'}", inline=True)
+        embed.add_field(name="📝 After", value=f"{after.nick or 'No nickname'}", inline=True)
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log nickname change: {e}")
+    
+    async def log_role_changes(self, before, after):
+        """Log role changes"""
+        if not self.moderation_log_channel:
+            return
+        
+        added_roles = set(after.roles) - set(before.roles)
+        removed_roles = set(before.roles) - set(after.roles)
+        
+        if not added_roles and not removed_roles:
+            return
+        
+        embed = discord.Embed(
+            title="🎭 ROLE CHANGES",
+            color=Config.COLORS['warning'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="👤 Member", value=f"{after.mention} ({after})", inline=False)
+        
+        if added_roles:
+            roles_text = ", ".join([f"@{role.name}" for role in added_roles])
+            embed.add_field(name="➕ Added Roles", value=roles_text, inline=False)
+        
+        if removed_roles:
+            roles_text = ", ".join([f"@{role.name}" for role in removed_roles])
+            embed.add_field(name="➖ Removed Roles", value=roles_text, inline=False)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log role changes: {e}")
+    
+    async def log_channel_activity(self, channel, action_type):
+        """Log channel creation/deletion"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"📢 CHANNEL {action_type}",
+            color=Config.COLORS['info'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="📍 Channel", value=f"#{channel.name}", inline=True)
+        embed.add_field(name="🔧 Type", value=f"{str(channel.type).title()}", inline=True)
+        embed.add_field(name="🆔 Channel ID", value=f"`{channel.id}`", inline=True)
+        
+        if hasattr(channel, 'category') and channel.category:
+            embed.add_field(name="📂 Category", value=f"{channel.category.name}", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log channel activity: {e}")
+    
+    async def log_invite_activity(self, invite, action_type):
+        """Log invite creation/deletion"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title=f"🔗 INVITE {action_type}",
+            color=Config.COLORS['secondary'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="🔗 Invite Code", value=f"`{invite.code}`", inline=True)
+        embed.add_field(name="📍 Channel", value=f"{invite.channel.mention}", inline=True)
+        
+        if invite.inviter:
+            embed.add_field(name="👤 Created By", value=f"{invite.inviter.mention}", inline=True)
+        
+        if hasattr(invite, 'max_uses') and invite.max_uses:
+            embed.add_field(name="🔢 Max Uses", value=f"{invite.max_uses}", inline=True)
+        
+        if hasattr(invite, 'expires_at') and invite.expires_at:
+            embed.add_field(name="⏰ Expires", value=f"<t:{int(invite.expires_at.timestamp())}:R>", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log invite activity: {e}")
+    
+    async def log_server_boost(self, before, after):
+        """Log server boost changes"""
+        if not self.moderation_log_channel:
+            return
+        
+        boost_change = after.premium_subscription_count - before.premium_subscription_count
+        
+        embed = discord.Embed(
+            title="💎 SERVER BOOST UPDATE",
+            color=Config.COLORS['success'] if boost_change > 0 else Config.COLORS['warning'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="📊 Boost Change", value=f"{'+' if boost_change > 0 else ''}{boost_change}", inline=True)
+        embed.add_field(name="💎 Total Boosts", value=f"{after.premium_subscription_count}", inline=True)
+        embed.add_field(name="⭐ Boost Level", value=f"{after.premium_tier}", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to log server boost: {e}")
+    
+    async def track_command_usage(self, command_name, user_id, guild_id):
+        """Track command usage statistics"""
+        if guild_id not in self.command_usage_stats:
+            self.command_usage_stats[guild_id] = {}
+        
+        if command_name not in self.command_usage_stats[guild_id]:
+            self.command_usage_stats[guild_id][command_name] = {'count': 0, 'users': set()}
+        
+        self.command_usage_stats[guild_id][command_name]['count'] += 1
+        self.command_usage_stats[guild_id][command_name]['users'].add(user_id)
+        
+        # Save to storage
+        try:
+            await self.storage.save_command_stats(self.command_usage_stats)
+        except Exception as e:
+            logger.error(f"Failed to save command stats: {e}")
+    
+    async def detect_mass_actions(self, action_type, target_count, timeframe=300):
+        """Detect mass moderation actions"""
+        current_time = datetime.utcnow()
+        
+        # Track recent actions
+        if action_type not in self.mass_action_tracking:
+            self.mass_action_tracking[action_type] = []
+        
+        # Add current action
+        self.mass_action_tracking[action_type].append(current_time)
+        
+        # Clean old entries
+        cutoff_time = current_time - timedelta(seconds=timeframe)
+        self.mass_action_tracking[action_type] = [
+            timestamp for timestamp in self.mass_action_tracking[action_type]
+            if timestamp > cutoff_time
+        ]
+        
+        # Check if threshold exceeded
+        if len(self.mass_action_tracking[action_type]) >= target_count:
+            await self.alert_mass_action(action_type, len(self.mass_action_tracking[action_type]))
+    
+    async def alert_mass_action(self, action_type, count):
+        """Alert about mass actions"""
+        if not self.moderation_log_channel:
+            return
+        
+        embed = discord.Embed(
+            title="🚨 MASS ACTION DETECTED",
+            description=f"**{count} {action_type.upper()} actions** detected in the last 5 minutes",
+            color=Config.COLORS['error'],
+            timestamp=datetime.utcnow()
+        )
+        
+        embed.add_field(name="🔍 Action Type", value=action_type.title(), inline=True)
+        embed.add_field(name="📊 Count", value=f"{count}", inline=True)
+        embed.add_field(name="⏰ Timeframe", value="5 minutes", inline=True)
+        
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.AI_VERSION}")
+        
+        try:
+            await self.moderation_log_channel.send(embed=embed)
+        except Exception as e:
+            logger.error(f"Failed to alert mass action: {e}")
+    
     @tasks.loop(minutes=Config.HEALTH_CHECK_INTERVAL)
     async def health_check(self):
         """Enhanced health check with 24/7 monitoring"""
@@ -448,6 +800,22 @@ class MerrywinterBot(commands.Bot):
             
             # Clean up old data if needed
             await self.storage.cleanup_old_data()
+            
+            # Update bot statistics
+            self.bot_stats = {
+                'uptime': str(uptime),
+                'guilds': len(self.guilds),
+                'users': len(self.users),
+                'latency': round(self.latency * 1000),
+                'commands_executed': getattr(self, 'commands_executed', 0),
+                'last_update': datetime.utcnow().isoformat(),
+                'version': Config.AI_VERSION,
+                'status': 'operational'
+            }
+            
+            # Save bot stats to storage
+            if hasattr(self, 'storage'):
+                await self.storage.save_bot_stats(self.bot_stats)
             
             # Log detailed health status to moderation channel every hour
             if uptime.total_seconds() % 3600 < Config.HEALTH_CHECK_INTERVAL * 60:

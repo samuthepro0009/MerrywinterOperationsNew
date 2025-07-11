@@ -39,3 +39,6 @@ def setup_logger(name='MerrywinterBot', level=logging.INFO):
     logger.addHandler(console_handler)
     
     return logger
+
+# Create a default logger instance
+logger = setup_logger()

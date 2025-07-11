@@ -153,6 +153,125 @@ class Storage:
         """Get all missions"""
         return await self._load_json(self.missions_file)
     
+    # Advanced feature storage methods
+    async def save_bot_stats(self, stats):
+        """Save bot statistics"""
+        await self._save_json('data/bot_stats.json', stats)
+    
+    async def load_bot_stats(self):
+        """Load bot statistics"""
+        return await self._load_json('data/bot_stats.json')
+    
+    async def save_command_stats(self, stats):
+        """Save command usage statistics"""
+        await self._save_json('data/command_stats.json', stats)
+    
+    async def load_command_stats(self):
+        """Load command usage statistics"""
+        return await self._load_json('data/command_stats.json')
+    
+    async def save_performance_data(self, data):
+        """Save performance metrics data"""
+        await self._save_json('data/performance_data.json', data)
+    
+    async def load_performance_data(self):
+        """Load performance metrics data"""
+        return await self._load_json('data/performance_data.json')
+    
+    async def save_training_schedule(self, schedule):
+        """Save training schedule"""
+        await self._save_json('data/training_schedule.json', schedule)
+    
+    async def load_training_schedule(self):
+        """Load training schedule"""
+        return await self._load_json('data/training_schedule.json')
+    
+    async def save_warning_points(self, points):
+        """Save warning points"""
+        await self._save_json('data/warning_points.json', points)
+    
+    async def load_warning_points(self):
+        """Load warning points"""
+        return await self._load_json('data/warning_points.json')
+    
+    async def save_notifications(self, notifications):
+        """Save notifications"""
+        await self._save_json('data/notifications.json', notifications)
+    
+    async def load_notifications(self):
+        """Load notifications"""
+        return await self._load_json('data/notifications.json')
+    
+    async def save_roblox_links(self, links):
+        """Save Roblox account links"""
+        await self._save_json('data/roblox_links.json', links)
+    
+    async def load_roblox_links(self):
+        """Load Roblox account links"""
+        return await self._load_json('data/roblox_links.json')
+    
+    async def save_achievements(self, achievements):
+        """Save achievements"""
+        await self._save_json('data/achievements.json', achievements)
+    
+    async def load_achievements(self):
+        """Load achievements"""
+        return await self._load_json('data/achievements.json')
+    
+    async def save_attendance_data(self, attendance):
+        """Save attendance data"""
+        await self._save_json('data/attendance_data.json', attendance)
+    
+    async def load_attendance_data(self):
+        """Load attendance data"""
+        return await self._load_json('data/attendance_data.json')
+    
+    async def save_user_preferences(self, preferences):
+        """Save user preferences"""
+        await self._save_json('data/user_preferences.json', preferences)
+    
+    async def load_user_preferences(self):
+        """Load user preferences"""
+        return await self._load_json('data/user_preferences.json')
+    
+    async def cleanup_old_data(self):
+        """Clean up old data files"""
+        try:
+            current_time = datetime.utcnow()
+            
+            # Clean up old notification data (older than 30 days)
+            notifications = await self.load_notifications()
+            if notifications:
+                filtered_notifications = []
+                for notification in notifications:
+                    try:
+                        notification_time = datetime.fromisoformat(notification['timestamp'])
+                        if (current_time - notification_time).days < 30:
+                            filtered_notifications.append(notification)
+                    except:
+                        continue
+                await self.save_notifications(filtered_notifications)
+            
+            # Clean up old warning points (older than 90 days)
+            warning_points = await self.load_warning_points()
+            if warning_points:
+                for user_id, user_data in warning_points.items():
+                    if 'warnings' in user_data:
+                        filtered_warnings = []
+                        for warning in user_data['warnings']:
+                            try:
+                                warning_time = datetime.fromisoformat(warning['timestamp'])
+                                if (current_time - warning_time).days < 90:
+                                    filtered_warnings.append(warning)
+                            except:
+                                continue
+                        user_data['warnings'] = filtered_warnings
+                        user_data['points'] = sum(w.get('points', 0) for w in filtered_warnings)
+                await self.save_warning_points(warning_points)
+                
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
+    
     # Cleanup
     async def cleanup_old_data(self, days_old: int = 30):
         """Clean up old data"""

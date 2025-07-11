@@ -47,10 +47,10 @@ class Config:
     }
     
     # Role Configuration - COMPLETE role names from the guild
-    BOARD_OF_DIRECTORS_ROLES = ["Board of Directors", "Merrywinter Security Consulting"]
+    BOARD_OF_DIRECTORS_ROLES = ["Board of Directors"]
     
     # Executive Level Roles
-    CHIEF_EXECUTIVE_ROLES = ["CEO", "Executive Command"]
+    CHIEF_EXECUTIVE_ROLES = ["Executive Director", "Executive Command"]
     
     # Director Level Roles - Complete list
     DIRECTOR_SECURITY_ROLES = ["Director of Strategic Operations", "Director of Security Architecture", "Compliance & Oversight Director", "Director of Security Operations", "Director of Cybersecurity Operations", "Director of Personnel and Clearance", "Director of Innovation and Technology", "Department Directors", "Director of Tactical Operations", "Director of Intelligence and Security", "Escort Security Units Director"]
@@ -123,11 +123,78 @@ class Config:
     HEALTH_CHECK_INTERVAL = 15  # minutes
     AUTO_RESTART_ON_ERROR = True
     
+    # Advanced Moderation Settings
+    ANTI_SPAM_ESCALATION = {
+        'first_offense': 'warn',
+        'second_offense': 'timeout_5min',
+        'third_offense': 'timeout_1hour',
+        'fourth_offense': 'timeout_1day',
+        'fifth_offense': 'ban'
+    }
+    
+    WARNING_POINT_SYSTEM = {
+        'spam': 2,
+        'inappropriate_content': 3,
+        'harassment': 5,
+        'raid_participation': 10,
+        'point_decay_days': 30  # Points decay after 30 days
+    }
+    
+    PHISHING_DOMAINS = [
+        'discord-nitro.com', 'discordapp.info', 'discord-gift.com',
+        'steamcommunity.ru', 'steampowered.org', 'discord.com.ru'
+    ]
+    
+    # Performance Metrics Tracking
+    PERFORMANCE_CATEGORIES = {
+        'operations': ['deployments', 'missions_completed', 'objectives_met'],
+        'training': ['sessions_attended', 'certifications_earned', 'skill_assessments'],
+        'leadership': ['commands_given', 'team_coordination', 'decision_making'],
+        'reliability': ['attendance_rate', 'response_time', 'availability']
+    }
+    
+    # Training Schedule Types
+    TRAINING_TYPES = {
+        'basic': {'duration': 60, 'requirements': ['ALPHA'], 'max_participants': 20},
+        'advanced': {'duration': 90, 'requirements': ['BETA'], 'max_participants': 15},
+        'specialized': {'duration': 120, 'requirements': ['OMEGA'], 'max_participants': 10},
+        'command': {'duration': 45, 'requirements': ['DEPARTMENT_DIRECTORS'], 'max_participants': 8}
+    }
+    
+    # Smart Notifications Settings
+    NOTIFICATION_PRIORITIES = {
+        'critical': {'color': 0xff0000, 'ping_roles': True, 'urgent': True},
+        'high': {'color': 0xff8800, 'ping_roles': True, 'urgent': False},
+        'medium': {'color': 0xffff00, 'ping_roles': False, 'urgent': False},
+        'low': {'color': 0x00ff00, 'ping_roles': False, 'urgent': False}
+    }
+    
+    # Roblox Integration Settings
+    ROBLOX_GAME_ID = None  # To be configured
+    ROBLOX_UNIVERSE_ID = None  # To be configured
+    ROBLOX_API_KEY = None  # To be configured via secrets
+    
+    # API Endpoints Configuration
+    API_ENDPOINTS = {
+        'stats': '/api/stats',
+        'users': '/api/users',
+        'operations': '/api/operations',
+        'training': '/api/training',
+        'moderation': '/api/moderation'
+    }
+    
     # Guild authorization check
     @staticmethod
     def check_guild_authorization(guild_id):
         """Check if guild is authorized to use the bot"""
         return guild_id == Config.AUTHORIZED_GUILD_ID
+    
+    @staticmethod
+    def is_moderator(user_roles, user_id):
+        """Check if user has moderator permissions"""
+        return (any(role in Config.MODERATOR_ROLES for role in user_roles) or
+                any(role in Config.ADMIN_ROLES for role in user_roles) or
+                user_id in Config.COMMUNITY_MANAGERS)
     
 
     
