@@ -465,14 +465,22 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                 async function loadDashboardData() {
                     try {
                         const response = await fetch('/api/stats');
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
                         const data = await response.json();
                         
                         // Format uptime nicely
                         const uptime = data.uptime || 'Unknown';
-                        document.getElementById('uptime').textContent = uptime;
-                        document.getElementById('latency').textContent = (data.latency || 0) + 'ms';
-                        document.getElementById('guilds').textContent = data.guilds || 0;
-                        document.getElementById('commands').textContent = data.commands_executed || 0;
+                        const uptimeElement = document.getElementById('uptime');
+                        const latencyElement = document.getElementById('latency');
+                        const guildsElement = document.getElementById('guilds');
+                        const commandsElement = document.getElementById('commands');
+                        
+                        if (uptimeElement) uptimeElement.textContent = uptime;
+                        if (latencyElement) latencyElement.textContent = (data.latency || 0) + 'ms';
+                        if (guildsElement) guildsElement.textContent = data.guilds || 0;
+                        if (commandsElement) commandsElement.textContent = data.commands_executed || 0;
                         
                         // Update status indicator
                         const statusIndicator = document.querySelector('.status-indicator');
@@ -488,10 +496,15 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
                         
                     } catch (error) {
                         console.error('Error loading dashboard data:', error);
-                        document.getElementById('uptime').textContent = 'Connection Error';
-                        document.getElementById('latency').textContent = 'N/A';
-                        document.getElementById('guilds').textContent = 'N/A';
-                        document.getElementById('commands').textContent = 'N/A';
+                        const uptimeElement = document.getElementById('uptime');
+                        const latencyElement = document.getElementById('latency');
+                        const guildsElement = document.getElementById('guilds');
+                        const commandsElement = document.getElementById('commands');
+                        
+                        if (uptimeElement) uptimeElement.textContent = 'Connection Error';
+                        if (latencyElement) latencyElement.textContent = 'N/A';
+                        if (guildsElement) guildsElement.textContent = 'N/A';
+                        if (commandsElement) commandsElement.textContent = 'N/A';
                         
                         // Update status indicator to error state
                         const statusIndicator = document.querySelector('.status-indicator');
@@ -580,14 +593,24 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
             try:
                 stats = loop.run_until_complete(self.storage.load_bot_stats())
                 if not stats:
+                    # Default stats when no data is available
                     stats = {
-                        'uptime': 'Unknown',
+                        'uptime': '0:00:00',
                         'latency': 0,
-                        'guilds': 0,
+                        'guilds': 1,
                         'commands_executed': 0,
-                        'status': 'Unknown'
+                        'status': 'Starting...'
                     }
+                
+                # Ensure all required fields are present
+                stats.setdefault('uptime', '0:00:00')
+                stats.setdefault('latency', 0)
+                stats.setdefault('guilds', 0)
+                stats.setdefault('commands_executed', 0)
+                stats.setdefault('status', 'operational')
+                
             except Exception as e:
+                print(f"Error loading bot stats: {e}")
                 stats = {
                     'uptime': 'Error loading',
                     'latency': 0,
@@ -603,10 +626,23 @@ class FROSTDashboardHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps(stats).encode())
+            self.wfile.write(json.dumps(stats, indent=2).encode())
             
         except Exception as e:
-            self.send_error(500, f"Internal Server Error: {str(e)}")
+            print(f"API stats error: {e}")
+            error_response = {
+                'uptime': 'API Error',
+                'latency': 0,
+                'guilds': 0,
+                'commands_executed': 0,
+                'status': 'Error',
+                'error': str(e)
+            }
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(error_response).encode())
     
     def serve_api_commands(self):
         """Serve API command statistics"""
