@@ -115,7 +115,7 @@ class Config:
         'error': 0xff0000,          # Red
         'info': 0x00ffff,           # Cyan
         'frost': 0x00ff41           # FROST signature color
-    }</old_str>
+    }
     
     # 24/7 Uptime Configuration
     ENABLE_KEEPALIVE = True
@@ -173,6 +173,23 @@ class Config:
     ROBLOX_GAME_ID = None  # To be configured
     ROBLOX_UNIVERSE_ID = None  # To be configured
     ROBLOX_API_KEY = None  # To be configured via secrets
+    ROBLOX_GROUP_ID = None  # PMC group ID
+    ROBLOX_PLACE_ID = None  # Main game place ID
+    
+    # Roblox API Configuration
+    ROBLOX_API_BASE = "https://api.roblox.com"
+    ROBLOX_GAMES_API = "https://games.roblox.com"
+    ROBLOX_USERS_API = "https://users.roblox.com"
+    ROBLOX_GROUPS_API = "https://groups.roblox.com"
+    
+    # Roblox Integration Features
+    ROBLOX_FEATURES = {
+        'player_verification': True,
+        'game_status_monitoring': True,
+        'performance_tracking': True,
+        'rank_synchronization': True,
+        'event_logging': True
+    }
     
     # API Endpoints Configuration
     API_ENDPOINTS = {
