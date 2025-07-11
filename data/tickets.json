@@ -14,5 +14,15 @@
         "channel_id": "channel_id or null"
       }
     }
+  },
+  "e55aeb6b-ba24-429a-94d5-4951a76238d3": {
+    "id": "e55aeb6b-ba24-429a-94d5-4951a76238d3",
+    "type": "commission",
+    "client": 488052909867532288,
+    "service_details": "test",
+    "status": "open",
+    "created_at": "2025-07-11T20:57:06.621359",
+    "guild_id": 1114936846124843008,
+    "channel_id": 1393335318333358135
   }
 }
