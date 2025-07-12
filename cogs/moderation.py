@@ -1,6 +1,6 @@
 """
-Moderation features for Merrywinter Security Consulting
-Handles automated moderation and logging
+Moderation system for Merrywinter Security Consulting
+Basic moderation tools - SLASH COMMANDS ONLY
 """
 
 import discord
@@ -14,256 +14,71 @@ from utils.helpers import get_user_clearance, create_embed
 from utils.storage import Storage
 
 class ModerationSystem(commands.Cog):
-    """Moderation and logging system"""
+    """Moderation system for PMC operations"""
     
     def __init__(self, bot):
         self.bot = bot
         self.storage = Storage()
-        self.warning_counts = {}
-    
-    def cog_check(self, ctx):
-        """Check if command is used in authorized guild"""
-        return Config.check_guild_authorization(ctx.guild.id)
-    
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        """Check if interaction is in authorized guild"""
-        return Config.check_guild_authorization(interaction.guild.id)
-    
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Monitor messages for moderation"""
-        if message.author.bot:
-            return
-        
-        # Check for spam
-        await self.check_spam(message)
-        
-        # Check for inappropriate content
-        await self.check_content(message)
-    
-    async def check_spam(self, message):
-        """Check for spam messages"""
-        user_id = message.author.id
-        current_time = datetime.utcnow()
-        
-        # Initialize user tracking
-        if user_id not in self.warning_counts:
-            self.warning_counts[user_id] = {
-                'messages': [],
-                'warnings': 0,
-                'last_warning': None
-            }
-        
-        user_data = self.warning_counts[user_id]
-        
-        # Add current message to tracking
-        user_data['messages'].append(current_time)
-        
-        # Remove old messages (older than 10 seconds)
-        user_data['messages'] = [
-            msg_time for msg_time in user_data['messages']
-            if (current_time - msg_time).total_seconds() < 10
-        ]
-        
-        # Check for spam (5+ messages in 10 seconds)
-        if len(user_data['messages']) >= 5:
-            await self.handle_spam(message)
-    
-    async def check_content(self, message):
-        """Check message content for inappropriate material"""
-        content = message.content.lower()
-        
-        # Basic content filters
-        inappropriate_words = [
-            'spam', 'scam', 'hack', 'cheat', 'exploit'
-        ]
-        
-        for word in inappropriate_words:
-            if word in content:
-                await self.handle_inappropriate_content(message, word)
-                break
-    
-    async def handle_spam(self, message):
-        """Handle spam detection"""
-        user_clearance = get_user_clearance(message.author.roles)
-        
-        # Don't moderate high-clearance users
-        if user_clearance in ['OMEGA', 'BETA']:
-            return
-        
-        # Delete the message
-        try:
-            await message.delete()
-        except discord.NotFound:
-            pass
-        
-        # Send warning
-        embed = discord.Embed(
-            title="⚠️ Spam Detected",
-            description=f"{message.author.mention}, please avoid sending messages too quickly.\n"
-                       "Continued spam will result in temporary restrictions.",
-            color=Config.COLORS['warning']
-        )
-        
-        warning_msg = await message.channel.send(embed=embed)
-        
-        # Delete warning after 10 seconds
-        await asyncio.sleep(10)
-        try:
-            await warning_msg.delete()
-        except discord.NotFound:
-            pass
-        
-        # Log the incident
-        await self.log_moderation_action(
-            message.author,
-            "Spam Detection",
-            "Automatic spam detection triggered",
-            message.channel
-        )
-    
-    async def handle_inappropriate_content(self, message, trigger_word):
-        """Handle inappropriate content detection"""
-        user_clearance = get_user_clearance(message.author.roles)
-        
-        # Don't moderate high-clearance users
-        if user_clearance in ['OMEGA', 'BETA']:
-            return
-        
-        # Delete the message
-        try:
-            await message.delete()
-        except discord.NotFound:
-            pass
-        
-        # Send warning
-        embed = discord.Embed(
-            title="⚠️ Content Filter Triggered",
-            description=f"{message.author.mention}, your message was removed for containing inappropriate content.\n"
-                       "Please follow our community guidelines.",
-            color=Config.COLORS['warning']
-        )
-        
-        warning_msg = await message.channel.send(embed=embed)
-        
-        # Delete warning after 15 seconds
-        await asyncio.sleep(15)
-        try:
-            await warning_msg.delete()
-        except discord.NotFound:
-            pass
-        
-        # Log the incident
-        await self.log_moderation_action(
-            message.author,
-            "Content Filter",
-            f"Triggered by word: {trigger_word}",
-            message.channel
-        )
-    
-    async def log_moderation_action(self, user, action_type, reason, channel):
-        """Log moderation actions"""
-        log_data = {
-            'user_id': user.id,
-            'action_type': action_type,
-            'reason': reason,
-            'channel_id': channel.id,
-            'timestamp': datetime.utcnow().isoformat(),
-            'guild_id': channel.guild.id
-        }
-        
-        await self.storage.save_moderation_log(log_data)
-        
-        # Send to log channel if configured
-        log_channel = discord.utils.get(channel.guild.channels, name=Config.LOG_CHANNEL)
-        if log_channel:
-            embed = discord.Embed(
-                title="📋 Moderation Action",
-                description=f"**User:** {user.mention}\n"
-                           f"**Action:** {action_type}\n"
-                           f"**Reason:** {reason}\n"
-                           f"**Channel:** {channel.mention}",
-                color=Config.COLORS['info']
-            )
-            embed.timestamp = datetime.utcnow()
-            
-            try:
-                await log_channel.send(embed=embed)
-            except discord.Forbidden:
-                pass
     
     @app_commands.command(name="purge", description="Delete multiple messages (Moderator+ only)")
     @app_commands.describe(
         amount="Number of messages to delete (1-100)",
-        user="Only delete messages from this user",
-        reason="Reason for purging messages"
+        user="Delete messages from specific user only (optional)"
     )
-    async def purge(self, interaction: discord.Interaction, amount: int, user: discord.Member = None, reason: str = "No reason provided"):
-        """Purge messages from a channel"""
-        # Check permissions
-        if not Config.is_moderator([role.name for role in interaction.user.roles], interaction.user.id):
+    async def purge_messages(self, interaction: discord.Interaction, amount: int, user: discord.Member = None):
+        """Delete multiple messages (Moderator+ only)"""
+        if not Config.is_moderator([role.name for role in interaction.user.roles]):
             await interaction.response.send_message("❌ You don't have permission to purge messages.", ephemeral=True)
             return
         
-        # Validate amount
         if amount < 1 or amount > 100:
             await interaction.response.send_message("❌ Amount must be between 1 and 100.", ephemeral=True)
             return
         
-        # Check if user can purge messages from the target user
-        if user:
-            user_clearance = get_user_clearance(user.roles)
-            issuer_clearance = get_user_clearance(interaction.user.roles)
-            
-            if (Config.has_permission(user_clearance, issuer_clearance) and 
-                not Config.is_community_manager(interaction.user.id)):
-                await interaction.response.send_message("❌ You cannot purge messages from users with equal or higher clearance.", ephemeral=True)
-                return
-        
         await interaction.response.defer()
         
         try:
-            def check_message(message):
-                if user:
+            if user:
+                # Delete messages from specific user
+                def check_user(message):
                     return message.author == user
-                return True
+                
+                deleted = await interaction.channel.purge(limit=amount, check=check_user)
+                
+                embed = discord.Embed(
+                    title="🗑️ Messages Purged",
+                    description=f"**Deleted:** {len(deleted)} messages from {user.mention}\n"
+                               f"**Moderator:** {interaction.user.mention}\n"
+                               f"**Channel:** {interaction.channel.mention}",
+                    color=Config.COLORS['success']
+                )
+            else:
+                # Delete any messages
+                deleted = await interaction.channel.purge(limit=amount)
+                
+                embed = discord.Embed(
+                    title="🗑️ Messages Purged",
+                    description=f"**Deleted:** {len(deleted)} messages\n"
+                               f"**Moderator:** {interaction.user.mention}\n"
+                               f"**Channel:** {interaction.channel.mention}",
+                    color=Config.COLORS['success']
+                )
             
-            deleted = await interaction.channel.purge(limit=amount, check=check_message)
-            
-            # Log the action
-            await self.log_moderation_action(
-                interaction.user,
-                "Message Purge",
-                f"Deleted {len(deleted)} messages" + (f" from {user.display_name}" if user else "") + f" - {reason}",
-                interaction.channel
-            )
-            
-            # Send confirmation
-            embed = discord.Embed(
-                title="🧹 Messages Purged",
-                description=f"**Messages Deleted:** {len(deleted)}\n"
-                           f"**Target User:** {user.mention if user else 'All users'}\n"
-                           f"**Reason:** {reason}\n"
-                           f"**Moderator:** {interaction.user.mention}",
-                color=Config.COLORS['success']
-            )
             embed.set_footer(text=f"{Config.COMPANY_NAME} - Moderation Action")
             
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed)
             
-        except discord.Forbidden:
-            await interaction.followup.send("❌ I don't have permission to delete messages in this channel.", ephemeral=True)
         except Exception as e:
-            await interaction.followup.send(f"❌ Error purging messages: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"❌ Error purging messages: {str(e)}")
     
     @app_commands.command(name="warn", description="Issue a warning to a user (Moderator+ only)")
     @app_commands.describe(
         user="User to warn",
         reason="Reason for the warning"
     )
-    async def warn_user(self, interaction: discord.Interaction, user: discord.Member, reason: str = "No reason provided"):
-        """Warn a user (Moderator only)"""
-        if not Config.is_moderator([role.name for role in interaction.user.roles], interaction.user.id):
+    async def warn_user(self, interaction: discord.Interaction, user: discord.Member, reason: str):
+        """Issue a warning to a user (Moderator+ only)"""
+        if not Config.is_moderator([role.name for role in interaction.user.roles]):
             await interaction.response.send_message("❌ You don't have permission to warn users.", ephemeral=True)
             return
         
@@ -271,12 +86,12 @@ class ModerationSystem(commands.Cog):
         user_clearance = get_user_clearance(user.roles)
         issuer_clearance = get_user_clearance(interaction.user.roles)
         
-        if (Config.has_permission(user_clearance, issuer_clearance) and 
-            not Config.is_community_manager(interaction.user.id)):
+        if (user_clearance in ['OMEGA', 'BETA'] and 
+            not Config.has_permission(issuer_clearance, user_clearance)):
             await interaction.response.send_message("❌ You cannot warn users with equal or higher clearance.", ephemeral=True)
             return
         
-        # Issue warning
+        # Create warning data
         warning_data = {
             'user_id': user.id,
             'warned_by': interaction.user.id,
@@ -285,7 +100,12 @@ class ModerationSystem(commands.Cog):
             'guild_id': interaction.guild.id
         }
         
-        await self.storage.save_warning(warning_data)
+        # Save warning (you'd implement this in storage)
+        warnings = self.storage.load_data('warnings.json')
+        if str(user.id) not in warnings:
+            warnings[str(user.id)] = []
+        warnings[str(user.id)].append(warning_data)
+        self.storage.save_data('warnings.json', warnings)
         
         # Send warning embed
         embed = discord.Embed(
@@ -314,30 +134,32 @@ class ModerationSystem(commands.Cog):
         except discord.Forbidden:
             pass
     
-    @commands.command(name='warnings')
-    async def check_warnings(self, ctx, user: discord.Member = None):
+    @app_commands.command(name="warnings", description="Check warnings for a user")
+    @app_commands.describe(user="User to check warnings for (optional)")
+    async def check_warnings(self, interaction: discord.Interaction, user: discord.Member = None):
         """Check warnings for a user"""
-        target_user = user or ctx.author
+        target_user = user or interaction.user
         
         # Check permissions
-        if (target_user != ctx.author and 
-            not Config.is_moderator([role.name for role in ctx.author.roles])):
-            await ctx.send("❌ You can only check your own warnings.")
+        if (target_user != interaction.user and 
+            not Config.is_moderator([role.name for role in interaction.user.roles])):
+            await interaction.response.send_message("❌ You can only check your own warnings.", ephemeral=True)
             return
         
-        warnings = await self.storage.get_user_warnings(target_user.id)
+        warnings = self.storage.load_data('warnings.json')
+        user_warnings = warnings.get(str(target_user.id), [])
         
-        if not warnings:
-            await ctx.send(f"✅ {target_user.mention} has no warnings.")
+        if not user_warnings:
+            await interaction.response.send_message(f"✅ {target_user.mention} has no warnings.")
             return
         
         embed = discord.Embed(
             title=f"⚠️ Warning History - {target_user.display_name}",
-            description=f"**Total Warnings:** {len(warnings)}",
+            description=f"**Total Warnings:** {len(user_warnings)}",
             color=Config.COLORS['warning']
         )
         
-        for i, warning in enumerate(warnings[-5:], 1):  # Show last 5 warnings
+        for i, warning in enumerate(user_warnings[-5:], 1):  # Show last 5 warnings
             embed.add_field(
                 name=f"Warning {i}",
                 value=f"**Reason:** {warning['reason']}\n"
@@ -348,125 +170,114 @@ class ModerationSystem(commands.Cog):
         
         embed.set_footer(text="Merrywinter Security Consulting - Disciplinary Records")
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='mute')
-    @commands.has_permissions(manage_roles=True)
-    async def mute_user(self, ctx, user: discord.Member, duration: int = 10, *, reason: str = "No reason provided"):
-        """Mute a user for specified minutes (Moderator only)"""
-        if not Config.is_moderator([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You don't have permission to mute users.")
+    @app_commands.command(name="timeout", description="Timeout a user (Moderator+ only)")
+    @app_commands.describe(
+        user="User to timeout",
+        duration="Duration in minutes (1-1440)",
+        reason="Reason for the timeout"
+    )
+    async def timeout_user(self, interaction: discord.Interaction, user: discord.Member, duration: int, reason: str = "No reason provided"):
+        """Timeout a user (Moderator+ only)"""
+        if not Config.is_moderator([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You don't have permission to timeout users.", ephemeral=True)
             return
         
-        # Don't mute high-clearance users unless issuer has higher clearance
+        if duration < 1 or duration > 1440:  # Max 24 hours
+            await interaction.response.send_message("❌ Duration must be between 1 and 1440 minutes (24 hours).", ephemeral=True)
+            return
+        
+        # Don't timeout high-clearance users unless issuer has higher clearance
         user_clearance = get_user_clearance(user.roles)
-        issuer_clearance = get_user_clearance(ctx.author.roles)
+        issuer_clearance = get_user_clearance(interaction.user.roles)
         
         if (user_clearance in ['OMEGA', 'BETA'] and 
             not Config.has_permission(issuer_clearance, user_clearance)):
-            await ctx.send("❌ You cannot mute users with equal or higher clearance.")
+            await interaction.response.send_message("❌ You cannot timeout users with equal or higher clearance.", ephemeral=True)
             return
         
-        # Try to timeout the user (Discord's built-in timeout)
+        # Try to timeout the user
         try:
             timeout_until = datetime.utcnow() + timedelta(minutes=duration)
             await user.timeout(timeout_until, reason=reason)
             
             embed = discord.Embed(
-                title="🔇 User Muted",
+                title="🔇 User Timed Out",
                 description=f"**User:** {user.mention}\n"
                            f"**Duration:** {duration} minutes\n"
                            f"**Reason:** {reason}\n"
-                           f"**Muted By:** {ctx.author.mention}",
+                           f"**Timed Out By:** {interaction.user.mention}\n"
+                           f"**Expires:** <t:{int(timeout_until.timestamp())}:R>",
                 color=Config.COLORS['error']
             )
+            embed.set_footer(text=f"{Config.COMPANY_NAME} - Moderation Action")
             
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
             
-            # Log the action
-            await self.log_moderation_action(
-                user,
-                "Mute",
-                f"{duration} minutes - {reason}",
-                ctx.channel
-            )
-            
-        except discord.Forbidden:
-            await ctx.send("❌ I don't have permission to mute this user.")
         except Exception as e:
-            await ctx.send(f"❌ Error muting user: {str(e)}")
+            await interaction.response.send_message(f"❌ Error timing out user: {str(e)}", ephemeral=True)
     
-    @commands.command(name='unmute')
-    @commands.has_permissions(manage_roles=True)
-    async def unmute_user(self, ctx, user: discord.Member):
-        """Unmute a user (Moderator only)"""
-        if not Config.is_moderator([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You don't have permission to unmute users.")
+    @app_commands.command(name="untimeout", description="Remove timeout from a user (Moderator+ only)")
+    @app_commands.describe(user="User to remove timeout from")
+    async def untimeout_user(self, interaction: discord.Interaction, user: discord.Member):
+        """Remove timeout from a user (Moderator+ only)"""
+        if not Config.is_moderator([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You don't have permission to remove timeouts.", ephemeral=True)
             return
         
         try:
-            await user.timeout(None, reason=f"Unmuted by {ctx.author}")
+            await user.timeout(None, reason=f"Timeout removed by {interaction.user}")
             
             embed = discord.Embed(
-                title="🔊 User Unmuted",
+                title="🔊 Timeout Removed",
                 description=f"**User:** {user.mention}\n"
-                           f"**Unmuted By:** {ctx.author.mention}",
+                           f"**Removed By:** {interaction.user.mention}",
                 color=Config.COLORS['success']
             )
+            embed.set_footer(text=f"{Config.COMPANY_NAME} - Moderation Action")
             
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
             
-            # Log the action
-            await self.log_moderation_action(
-                user,
-                "Unmute",
-                f"Unmuted by {ctx.author}",
-                ctx.channel
-            )
-            
-        except discord.Forbidden:
-            await ctx.send("❌ I don't have permission to unmute this user.")
         except Exception as e:
-            await ctx.send(f"❌ Error unmuting user: {str(e)}")
+            await interaction.response.send_message(f"❌ Error removing timeout: {str(e)}", ephemeral=True)
     
-    @commands.command(name='modlogs')
-    @commands.has_permissions(manage_guild=True)
-    async def moderation_logs(self, ctx, user: discord.Member = None):
-        """View moderation logs (Admin only)"""
-        if not Config.is_admin([role.name for role in ctx.author.roles]):
-            await ctx.send("❌ You don't have permission to view moderation logs.")
+    @app_commands.command(name="kick", description="Kick a user from the server (Moderator+ only)")
+    @app_commands.describe(
+        user="User to kick",
+        reason="Reason for the kick"
+    )
+    async def kick_user(self, interaction: discord.Interaction, user: discord.Member, reason: str = "No reason provided"):
+        """Kick a user from the server (Moderator+ only)"""
+        if not Config.is_moderator([role.name for role in interaction.user.roles]):
+            await interaction.response.send_message("❌ You don't have permission to kick users.", ephemeral=True)
             return
         
-        if user:
-            logs = await self.storage.get_user_moderation_logs(user.id)
-            title = f"Moderation Logs - {user.display_name}"
-        else:
-            logs = await self.storage.get_guild_moderation_logs(ctx.guild.id)
-            title = "Server Moderation Logs"
+        # Don't kick high-clearance users unless issuer has higher clearance
+        user_clearance = get_user_clearance(user.roles)
+        issuer_clearance = get_user_clearance(interaction.user.roles)
         
-        if not logs:
-            await ctx.send("📋 No moderation logs found.")
+        if (user_clearance in ['OMEGA', 'BETA'] and 
+            not Config.has_permission(issuer_clearance, user_clearance)):
+            await interaction.response.send_message("❌ You cannot kick users with equal or higher clearance.", ephemeral=True)
             return
         
-        embed = discord.Embed(
-            title=f"📋 {title}",
-            description=f"**Total Entries:** {len(logs)}",
-            color=Config.COLORS['info']
-        )
-        
-        for i, log in enumerate(logs[-10:], 1):  # Show last 10 logs
-            embed.add_field(
-                name=f"Entry {i}",
-                value=f"**User:** <@{log['user_id']}>\n"
-                      f"**Action:** {log['action_type']}\n"
-                      f"**Reason:** {log['reason']}\n"
-                      f"**Date:** {log['timestamp'][:10]}",
-                inline=False
+        try:
+            await user.kick(reason=reason)
+            
+            embed = discord.Embed(
+                title="👢 User Kicked",
+                description=f"**User:** {user.mention}\n"
+                           f"**Reason:** {reason}\n"
+                           f"**Kicked By:** {interaction.user.mention}",
+                color=Config.COLORS['error']
             )
-        
-        embed.set_footer(text="Merrywinter Security Consulting - Moderation Logs")
-        
-        await ctx.send(embed=embed)
+            embed.set_footer(text=f"{Config.COMPANY_NAME} - Moderation Action")
+            
+            await interaction.response.send_message(embed=embed)
+            
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Error kicking user: {str(e)}", ephemeral=True)
 
 async def setup(bot):
     """Setup function for the cog"""

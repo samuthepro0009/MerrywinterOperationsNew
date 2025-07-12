@@ -1,11 +1,10 @@
 """
 Security clearance management for Merrywinter Security Consulting
-Handles Omega, Beta, and Alpha clearance levels - SLASH COMMANDS ONLY
+Handles Omega, Beta, and Alpha clearance levels
 """
 
 import discord
 from discord.ext import commands
-from discord import app_commands
 from datetime import datetime
 
 from config.settings import Config
@@ -140,26 +139,25 @@ class SecurityClearance(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
     
-    @app_commands.command(name="promote", description="Promote an operator (Admin only)")
-    @app_commands.describe(user="User to promote", clearance_level="Clearance level (ALPHA, BETA, OMEGA)")
-    @app_commands.choices(clearance_level=[
-        app_commands.Choice(name="ALPHA - Ground Operations", value="ALPHA"),
-        app_commands.Choice(name="BETA - Field Command", value="BETA"),
-        app_commands.Choice(name="OMEGA - Supreme Authority", value="OMEGA")
-    ])
-    async def promote_operator(self, interaction: discord.Interaction, user: discord.Member, clearance_level: str):
-        """Promote an operator (Admin only)"""
-        if not Config.is_admin([role.name for role in interaction.user.roles]):
-            await interaction.response.send_message("❌ You need administrator permissions to promote operators.", ephemeral=True)
+    @commands.command(name='promote')
+    @commands.has_permissions(manage_roles=True)
+    async def promote_operator(self, ctx, user: discord.Member, level: str):
+        """Promote an operator to a higher clearance level (Admin only)"""
+        if not Config.is_admin([role.name for role in ctx.author.roles]):
+            await ctx.send("❌ You don't have permission to promote operators.")
             return
         
-        level = clearance_level.upper()
+        level = level.upper()
+        
+        if level not in Config.SECURITY_LEVELS:
+            await ctx.send("❌ Invalid clearance level. Use: OMEGA, BETA, or ALPHA")
+            return
         
         # Get current clearance
         current_clearance = get_user_clearance(user.roles)
         
         if current_clearance == level:
-            await interaction.response.send_message(f"❌ {user.mention} already has {level} clearance.", ephemeral=True)
+            await ctx.send(f"❌ {user.mention} already has {level} clearance.")
             return
         
         # Remove old clearance roles
@@ -171,7 +169,7 @@ class SecurityClearance(commands.Cog):
         try:
             # Remove old roles
             if old_roles:
-                await user.remove_roles(*old_roles, reason=f"Clearance update by {interaction.user}")
+                await user.remove_roles(*old_roles, reason=f"Clearance update by {ctx.author}")
             
             # Add new role
             new_role_names = {
@@ -182,48 +180,56 @@ class SecurityClearance(commands.Cog):
             
             new_roles = []
             for role_name in new_role_names[level]:
-                role = discord.utils.get(interaction.guild.roles, name=role_name)
+                role = discord.utils.get(ctx.guild.roles, name=role_name)
                 if role:
                     new_roles.append(role)
             
             if new_roles:
-                await user.add_roles(*new_roles, reason=f"Promoted to {level} by {interaction.user}")
+                await user.add_roles(*new_roles, reason=f"Promoted to {level} by {ctx.author}")
             
+            # Log the promotion
+            await self.storage.log_promotion(user.id, current_clearance, level, ctx.author.id)
+            
+            # Send confirmation
             embed = discord.Embed(
-                title="✅ Operator Promoted",
+                title="🎖️ Operator Promoted",
                 description=f"**Operator:** {user.mention}\n"
                            f"**Previous Clearance:** {current_clearance}\n"
                            f"**New Clearance:** {level}\n"
-                           f"**Authorized By:** {interaction.user.mention}",
+                           f"**Authorized By:** {ctx.author.mention}",
                 color=Config.COLORS['success']
             )
             embed.set_footer(text="Merrywinter Security Consulting - Personnel Division")
             
-            await interaction.response.send_message(embed=embed)
+            await ctx.send(embed=embed)
             
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error promoting operator: {str(e)}", ephemeral=True)
+            await ctx.send(f"❌ Error promoting operator: {str(e)}")
     
-    @app_commands.command(name="demote", description="Demote an operator (Admin only)")
-    @app_commands.describe(user="User to demote", clearance_level="New clearance level (ALPHA, BETA, CIVILIAN)")
-    @app_commands.choices(clearance_level=[
-        app_commands.Choice(name="ALPHA - Ground Operations", value="ALPHA"),
-        app_commands.Choice(name="BETA - Field Command", value="BETA"),
-        app_commands.Choice(name="CIVILIAN - No Clearance", value="CIVILIAN")
-    ])
-    async def demote_operator(self, interaction: discord.Interaction, user: discord.Member, clearance_level: str):
-        """Demote an operator (Admin only)"""
-        if not Config.is_admin([role.name for role in interaction.user.roles]):
-            await interaction.response.send_message("❌ You need administrator permissions to demote operators.", ephemeral=True)
+    @commands.command(name='demote')
+    @commands.has_permissions(manage_roles=True)
+    async def demote_operator(self, ctx, user: discord.Member, level: str):
+        """Demote an operator to a lower clearance level (Admin only)"""
+        if not Config.is_admin([role.name for role in ctx.author.roles]):
+            await ctx.send("❌ You don't have permission to demote operators.")
             return
         
-        level = clearance_level.upper()
+        level = level.upper()
+        
+        if level not in Config.SECURITY_LEVELS:
+            await ctx.send("❌ Invalid clearance level. Use: OMEGA, BETA, or ALPHA")
+            return
         
         # Get current clearance
         current_clearance = get_user_clearance(user.roles)
         
         if current_clearance == level:
-            await interaction.response.send_message(f"❌ {user.mention} already has {level} clearance.", ephemeral=True)
+            await ctx.send(f"❌ {user.mention} already has {level} clearance.")
+            return
+        
+        # Check if this is actually a demotion
+        if Config.SECURITY_LEVELS[current_clearance] <= Config.SECURITY_LEVELS[level]:
+            await ctx.send("❌ This would be a promotion, not a demotion. Use !promote instead.")
             return
         
         # Remove old clearance roles
@@ -235,38 +241,96 @@ class SecurityClearance(commands.Cog):
         try:
             # Remove old roles
             if old_roles:
-                await user.remove_roles(*old_roles, reason=f"Clearance update by {interaction.user}")
+                await user.remove_roles(*old_roles, reason=f"Clearance update by {ctx.author}")
             
-            # Add new role (if not civilian)
-            if level != 'CIVILIAN':
-                new_role_names = {
-                    'BETA': Config.BETA_ROLES,
-                    'ALPHA': Config.ALPHA_ROLES
-                }
-                
-                new_roles = []
-                for role_name in new_role_names[level]:
-                    role = discord.utils.get(interaction.guild.roles, name=role_name)
-                    if role:
-                        new_roles.append(role)
-                
-                if new_roles:
-                    await user.add_roles(*new_roles, reason=f"Demoted to {level} by {interaction.user}")
+            # Add new role
+            new_role_names = {
+                'OMEGA': Config.OMEGA_ROLES,
+                'BETA': Config.BETA_ROLES,
+                'ALPHA': Config.ALPHA_ROLES
+            }
             
+            new_roles = []
+            for role_name in new_role_names[level]:
+                role = discord.utils.get(ctx.guild.roles, name=role_name)
+                if role:
+                    new_roles.append(role)
+            
+            if new_roles:
+                await user.add_roles(*new_roles, reason=f"Demoted to {level} by {ctx.author}")
+            
+            # Log the demotion
+            await self.storage.log_promotion(user.id, current_clearance, level, ctx.author.id)
+            
+            # Send confirmation
             embed = discord.Embed(
-                title="⚠️ Operator Demoted",
+                title="⬇️ Operator Demoted",
                 description=f"**Operator:** {user.mention}\n"
                            f"**Previous Clearance:** {current_clearance}\n"
                            f"**New Clearance:** {level}\n"
-                           f"**Authorized By:** {interaction.user.mention}",
+                           f"**Authorized By:** {ctx.author.mention}",
                 color=Config.COLORS['warning']
             )
             embed.set_footer(text="Merrywinter Security Consulting - Personnel Division")
             
-            await interaction.response.send_message(embed=embed)
+            await ctx.send(embed=embed)
             
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error demoting operator: {str(e)}", ephemeral=True)
+            await ctx.send(f"❌ Error demoting operator: {str(e)}")
+    
+    @commands.command(name='security-audit')
+    @commands.has_permissions(administrator=True)
+    async def security_audit(self, ctx):
+        """Perform security audit of all operators (Admin only)"""
+        if not Config.is_admin([role.name for role in ctx.author.roles]):
+            await ctx.send("❌ You don't have permission to perform security audits.")
+            return
+        
+        guild = ctx.guild
+        issues = []
+        
+        # Check for role configuration issues
+        for member in guild.members:
+            if member.bot:
+                continue
+            
+            member_roles = [role.name for role in member.roles]
+            
+            # Check for conflicting clearance levels
+            clearance_roles = []
+            for role_name in member_roles:
+                if role_name in Config.OMEGA_ROLES:
+                    clearance_roles.append('OMEGA')
+                elif role_name in Config.BETA_ROLES:
+                    clearance_roles.append('BETA')
+                elif role_name in Config.ALPHA_ROLES:
+                    clearance_roles.append('ALPHA')
+            
+            if len(set(clearance_roles)) > 1:
+                issues.append(f"🔴 {member.display_name} has conflicting clearance levels: {', '.join(set(clearance_roles))}")
+        
+        embed = discord.Embed(
+            title="🔍 Security Audit Report",
+            description=f"**Guild:** {guild.name}\n**Audit Date:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+            color=Config.COLORS['info']
+        )
+        
+        if issues:
+            embed.add_field(
+                name="⚠️ Issues Found",
+                value='\n'.join(issues[:10]),  # Show max 10 issues
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="✅ Audit Results",
+                value="No security issues found. All operators have proper clearance levels.",
+                inline=False
+            )
+        
+        embed.set_footer(text="Merrywinter Security Consulting - Security Audit Division")
+        
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     """Setup function for the cog"""

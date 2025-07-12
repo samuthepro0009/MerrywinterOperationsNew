@@ -1,10 +1,11 @@
 """
 PMC Operations management for Merrywinter Security Consulting
-Handles missions, deployments, and operational status
+Handles missions, deployments, and operational status - SLASH COMMANDS ONLY
 """
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from datetime import datetime, timedelta
 import random
 
@@ -19,49 +20,34 @@ class PMCOperations(commands.Cog):
         self.bot = bot
         self.storage = Storage()
     
-    @commands.command(name='mission')
-    async def mission_briefing(self, ctx, mission_type: str = None, classified: bool = False):
-        """Get mission briefing or create new mission"""
-        user_clearance = get_user_clearance(ctx.author.roles)
+    @app_commands.command(name="mission", description="Get mission briefing")
+    @app_commands.describe(
+        mission_type="Type of mission to request",
+        classified="Make this a classified mission (requires BETA+ clearance)"
+    )
+    @app_commands.choices(mission_type=[
+        app_commands.Choice(name="Reconnaissance", value="reconnaissance"),
+        app_commands.Choice(name="Security Detail", value="security-detail"),
+        app_commands.Choice(name="Convoy Escort", value="convoy-escort"),
+        app_commands.Choice(name="Base Defense", value="base-defense"),
+        app_commands.Choice(name="Direct Action", value="direct-action"),
+        app_commands.Choice(name="Intelligence Gathering", value="intelligence-gathering")
+    ])
+    async def mission_briefing(self, interaction: discord.Interaction, mission_type: str, classified: bool = False):
+        """Get mission briefing"""
+        user_clearance = get_user_clearance(interaction.user.roles)
         
         if user_clearance == 'CIVILIAN':
-            await ctx.send("❌ You need military clearance to access mission briefings.")
-            return
-        
-        if not mission_type:
-            # Show available missions
-            embed = discord.Embed(
-                title="🎯 Available Mission Types",
-                description="**Merrywinter Security Consulting - Mission Command**\n\n"
-                           "Select a mission type to receive your briefing:",
-                color=Config.COLORS['primary']
-            )
-            
-            missions = Config.MISSION_TYPES
-            for i, mission in enumerate(missions, 1):
-                embed.add_field(
-                    name=f"{i}. {mission}",
-                    value=f"Use: `!mission {mission.lower().replace(' ', '-')}`",
-                    inline=True
-                )
-            
-            embed.set_footer(text="Merrywinter Security Consulting - Mission Command")
-            await ctx.send(embed=embed)
-            return
-        
-        # Generate mission briefing
-        mission_name = mission_type.replace('-', ' ').title()
-        
-        if mission_name not in Config.MISSION_TYPES:
-            await ctx.send("❌ Invalid mission type. Use `!mission` to see available types.")
+            await interaction.response.send_message("❌ You need military clearance to access mission briefings.", ephemeral=True)
             return
         
         # Check if classified mission requires higher clearance
         if classified and not Config.has_permission(user_clearance, 'BETA'):
-            await ctx.send("❌ You need BETA+ clearance to access classified missions.")
+            await interaction.response.send_message("❌ You need BETA+ clearance to access classified missions.", ephemeral=True)
             return
         
         # Generate mission details
+        mission_name = mission_type.replace('-', ' ').title()
         sector = random.choice(Config.OPERATION_SECTORS)
         mission_id = f"MSC-{random.randint(1000, 9999)}"
         objectives = self.generate_mission_objectives(mission_name)
@@ -73,7 +59,7 @@ class PMCOperations(commands.Cog):
             classification_note = f"\n🔒 **CLASSIFIED MISSION**\n*Access restricted to BETA+ clearance only*"
         else:
             title = f"🎯 MISSION BRIEFING - {mission_name.upper()}"
-            operator_info = f"**Operator:** {ctx.author.mention}"
+            operator_info = f"**Operator:** {interaction.user.mention}"
             classification_note = ""
         
         embed = discord.Embed(
@@ -106,442 +92,192 @@ class PMCOperations(commands.Cog):
             name="📡 Communication",
             value=f"• Primary Channel: Command\n"
                   f"• Backup Channel: Emergency\n"
-                  f"• Call Sign: {ctx.author.display_name[:3].upper()}-{random.randint(10, 99)}",
+                  f"• Call Sign: {interaction.user.display_name[:3].upper()}-{random.randint(10, 99)}",
             inline=False
         )
         
         embed.set_footer(text="Merrywinter Security Consulting - Mission Command")
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         
         # Save mission data
         mission_data = {
             'mission_id': mission_id,
-            'operator_id': ctx.author.id,
+            'operator_id': interaction.user.id,
             'mission_type': mission_name,
             'sector': sector,
             'objectives': objectives,
             'classified': classified,
             'status': 'briefed',
             'created_at': datetime.utcnow().isoformat(),
-            'guild_id': ctx.guild.id
+            'guild_id': interaction.guild.id
         }
         
-        await self.storage.save_mission(mission_data)
+        # Save to storage
+        missions = self.storage.load_data('missions.json')
+        missions[mission_id] = mission_data
+        self.storage.save_data('missions.json', missions)
     
-    def generate_mission_objectives(self, mission_type: str) -> str:
-        """Generate mission objectives based on mission type"""
-        objectives = {
+    def generate_mission_objectives(self, mission_type):
+        """Generate mission objectives based on type"""
+        objectives_map = {
             'Reconnaissance': [
                 "• Conduct surveillance of target area",
                 "• Identify enemy positions and movements",
-                "• Report intelligence findings",
-                "• Avoid detection at all costs"
-            ],
-            'Direct Action': [
-                "• Eliminate high-value targets",
-                "• Secure the objective area",
-                "• Neutralize enemy resistance",
-                "• Exfiltrate to extraction point"
-            ],
-            'Special Operations': [
-                "• Classified mission parameters",
-                "• Execute with extreme precision",
-                "• Maintain total operational security",
-                "• Report to command only"
+                "• Gather intelligence on local conditions",
+                "• Report findings to command"
             ],
             'Security Detail': [
-                "• Protect designated personnel",
-                "• Secure perimeter and access points",
-                "• Maintain vigilant watch",
-                "• Respond to threats immediately"
+                "• Protect assigned VIP or asset",
+                "• Maintain security perimeter",
+                "• Coordinate with local security forces",
+                "• Respond to security threats"
             ],
             'Convoy Escort': [
-                "• Escort convoy through hostile territory",
+                "• Provide security for supply convoy",
                 "• Maintain formation and communication",
-                "• Neutralize threats to convoy",
-                "• Ensure safe arrival at destination"
+                "• Respond to ambush or attack",
+                "• Ensure safe delivery of cargo"
             ],
             'Base Defense': [
-                "• Defend base from enemy assault",
-                "• Maintain defensive positions",
-                "• Coordinate with other defenders",
-                "• Prevent enemy infiltration"
+                "• Secure defensive positions",
+                "• Monitor perimeter sensors",
+                "• Coordinate with other units",
+                "• Repel enemy attacks"
+            ],
+            'Direct Action': [
+                "• Neutralize specified targets",
+                "• Secure designated objectives",
+                "• Minimize collateral damage",
+                "• Extract upon mission completion"
             ],
             'Intelligence Gathering': [
-                "• Infiltrate enemy communications",
-                "• Gather strategic intelligence",
-                "• Document enemy capabilities",
-                "• Exfiltrate without detection"
-            ],
-            'Counter-Intelligence': [
-                "• Identify enemy intelligence assets",
-                "• Disrupt enemy operations",
-                "• Protect friendly intelligence",
-                "• Eliminate security threats"
-            ],
-            'Training Exercise': [
-                "• Execute training scenarios",
-                "• Demonstrate tactical proficiency",
-                "• Coordinate with training team",
-                "• Complete all training objectives"
-            ],
-            'Joint Operations': [
-                "• Coordinate with allied forces",
-                "• Execute combined operations",
-                "• Maintain inter-unit communication",
-                "• Achieve joint mission objectives"
+                "• Collect actionable intelligence",
+                "• Establish surveillance network",
+                "• Document enemy activities",
+                "• Transmit findings to command"
             ]
         }
         
-        return '\n'.join(objectives.get(mission_type, [
+        return '\n'.join(objectives_map.get(mission_type, [
             "• Complete assigned objectives",
             "• Maintain operational security",
             "• Report status to command",
             "• Return to base safely"
         ]))
     
-    @commands.command(name='status')
-    async def operator_status(self, ctx, user: discord.Member = None):
-        """Check operator status and active missions"""
-        target_user = user or ctx.author
-        user_clearance = get_user_clearance(target_user.roles)
+    @app_commands.command(name="operation-status", description="Check current operational status")
+    async def operation_status(self, interaction: discord.Interaction):
+        """Check current operational status"""
+        user_clearance = get_user_clearance(interaction.user.roles)
         
         if user_clearance == 'CIVILIAN':
-            await ctx.send("❌ No military status available for civilian personnel.")
+            await interaction.response.send_message("❌ You need military clearance to access operational status.", ephemeral=True)
             return
         
-        # Get operator's active missions
-        active_missions = await self.storage.get_active_missions(target_user.id)
+        # Load operations data
+        operations = self.storage.load_data('operations.json')
+        
+        active_ops = []
+        completed_ops = []
+        
+        for op_id, op_data in operations.items():
+            if op_data.get('status') == 'active':
+                active_ops.append(op_data)
+            elif op_data.get('status') == 'completed':
+                completed_ops.append(op_data)
         
         embed = discord.Embed(
-            title=f"📊 Operator Status - {target_user.display_name}",
-            description=f"**Clearance Level:** {user_clearance}\n"
-                       f"**Status:** {'🟢 Active' if active_missions else '🟡 Standby'}\n"
-                       f"**Active Missions:** {len(active_missions)}",
-            color=Config.COLORS.get(user_clearance.lower(), Config.COLORS['primary'])
+            title="📊 Operational Status Report",
+            description=f"**Current Operations Status**\n"
+                       f"**Requesting Officer:** {interaction.user.mention}\n"
+                       f"**Clearance Level:** {user_clearance}",
+            color=Config.COLORS['info']
         )
         
-        if active_missions:
-            mission_list = []
-            for mission in active_missions[:5]:  # Show max 5 missions
-                mission_list.append(f"• {mission['mission_id']} - {mission['mission_type']}")
+        if active_ops:
+            active_list = []
+            for op in active_ops[:5]:  # Show max 5 active ops
+                active_list.append(f"• **{op.get('operation_id', 'N/A')}** - {op.get('operation_name', 'Unknown')}")
             
             embed.add_field(
-                name="🎯 Active Missions",
-                value='\n'.join(mission_list),
+                name="🔥 Active Operations",
+                value='\n'.join(active_list),
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="🔥 Active Operations",
+                value="No active operations",
                 inline=False
             )
         
-        # Add operational statistics
-        total_missions = await self.storage.get_mission_count(target_user.id)
         embed.add_field(
             name="📈 Statistics",
-            value=f"**Total Missions:** {total_missions}\n"
-                  f"**Success Rate:** {random.randint(85, 99)}%\n"
-                  f"**Commendations:** {random.randint(0, 10)}",
-            inline=True
-        )
-        
-        embed.add_field(
-            name="🏆 Specializations",
-            value="• Urban Warfare\n• Reconnaissance\n• Counter-Intelligence",
-            inline=True
-        )
-        
-        embed.set_footer(text="Merrywinter Security Consulting - Personnel Status")
-        
-        await ctx.send(embed=embed)
-    
-    @commands.command(name='deploy')
-    async def deploy_to_sector(self, ctx, *, sector: str = None):
-        """Deploy operator to a specific sector"""
-        user_clearance = get_user_clearance(ctx.author.roles)
-        
-        if user_clearance == 'CIVILIAN':
-            await ctx.send("❌ You need military clearance to deploy to operational sectors.")
-            return
-        
-        if not sector:
-            # Show available sectors
-            embed = discord.Embed(
-                title="🗺️ Available Deployment Sectors",
-                description="**Merrywinter Security Consulting - Deployment Command**\n\n"
-                           "Select a sector for deployment:",
-                color=Config.COLORS['primary']
-            )
-            
-            for i, sector_name in enumerate(Config.OPERATION_SECTORS, 1):
-                embed.add_field(
-                    name=f"{i}. {sector_name}",
-                    value=f"Use: `!deploy {sector_name.split(' - ')[0]}`",
-                    inline=True
-                )
-            
-            embed.set_footer(text="Merrywinter Security Consulting - Deployment Command")
-            await ctx.send(embed=embed)
-            return
-        
-        # Find matching sector
-        matching_sector = None
-        for sector_name in Config.OPERATION_SECTORS:
-            if sector.lower() in sector_name.lower():
-                matching_sector = sector_name
-                break
-        
-        if not matching_sector:
-            await ctx.send("❌ Invalid sector. Use `!deploy` to see available sectors.")
-            return
-        
-        # Create deployment
-        deployment_id = f"DEP-{random.randint(1000, 9999)}"
-        
-        embed = discord.Embed(
-            title="🚁 DEPLOYMENT ORDERS",
-            description=f"**Deployment ID:** {deployment_id}\n"
-                       f"**Operator:** {ctx.author.mention}\n"
-                       f"**Clearance Level:** {user_clearance}\n"
-                       f"**Destination:** {matching_sector}\n"
-                       f"**Deployment Time:** {datetime.utcnow().strftime('%H:%M:%S')} UTC",
-            color=Config.COLORS['warning']
-        )
-        
-        embed.add_field(
-            name="📋 Pre-Deployment Checklist",
-            value="✅ Equipment Check\n"
-                  "✅ Communication Systems\n"
-                  "✅ Mission Briefing\n"
-                  "✅ Authorization Confirmed",
+            value=f"**Active Operations:** {len(active_ops)}\n"
+                  f"**Completed Operations:** {len(completed_ops)}\n"
+                  f"**Total Operations:** {len(operations)}",
             inline=False
         )
         
+        embed.set_footer(text="Merrywinter Security Consulting - Operations Command")
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @app_commands.command(name="deploy", description="Deploy to operational sectors")
+    @app_commands.describe(
+        sector="Deployment sector",
+        duration="Deployment duration in hours"
+    )
+    @app_commands.choices(sector=[
+        app_commands.Choice(name="Sector Alpha - Urban Operations", value="alpha"),
+        app_commands.Choice(name="Sector Beta - Desert Warfare", value="beta"),
+        app_commands.Choice(name="Sector Gamma - Naval Operations", value="gamma"),
+        app_commands.Choice(name="Sector Delta - Mountain Warfare", value="delta")
+    ])
+    async def deploy_operator(self, interaction: discord.Interaction, sector: str, duration: int = 8):
+        """Deploy to operational sectors"""
+        user_clearance = get_user_clearance(interaction.user.roles)
+        
+        if user_clearance == 'CIVILIAN':
+            await interaction.response.send_message("❌ You need military clearance to deploy.", ephemeral=True)
+            return
+        
+        if duration < 1 or duration > 24:
+            await interaction.response.send_message("❌ Deployment duration must be between 1 and 24 hours.", ephemeral=True)
+            return
+        
+        sector_names = {
+            'alpha': 'Alpha - Urban Operations',
+            'beta': 'Beta - Desert Warfare',
+            'gamma': 'Gamma - Naval Operations',
+            'delta': 'Delta - Mountain Warfare'
+        }
+        
+        deployment_id = f"DEP-{random.randint(1000, 9999)}"
+        
+        embed = discord.Embed(
+            title="🚁 Deployment Authorized",
+            description=f"**Deployment ID:** {deployment_id}\n"
+                       f"**Operator:** {interaction.user.mention}\n"
+                       f"**Clearance Level:** {user_clearance}\n"
+                       f"**Deployment Sector:** {sector_names.get(sector, sector)}\n"
+                       f"**Duration:** {duration} hours",
+            color=Config.COLORS['success']
+        )
+        
         embed.add_field(
-            name="⚠️ Deployment Guidelines",
-            value="• Maintain radio contact\n"
-                  "• Follow established protocols\n"
-                  "• Report any anomalies\n"
-                  "• Await further orders",
+            name="📋 Deployment Orders",
+            value=f"• Report to sector commander upon arrival\n"
+                  f"• Maintain communication protocols\n"
+                  f"• Follow all ROE guidelines\n"
+                  f"• Expected return: <t:{int((datetime.utcnow() + timedelta(hours=duration)).timestamp())}:R>",
             inline=False
         )
         
         embed.set_footer(text="Merrywinter Security Consulting - Deployment Command")
         
-        await ctx.send(embed=embed)
-        
-        # Save deployment data
-        deployment_data = {
-            'deployment_id': deployment_id,
-            'operator_id': ctx.author.id,
-            'sector': matching_sector,
-            'status': 'deployed',
-            'deployed_at': datetime.utcnow().isoformat(),
-            'guild_id': ctx.guild.id
-        }
-        
-        await self.storage.save_deployment(deployment_data)
-    
-    @commands.command(name='intel')
-    async def intelligence_report(self, ctx, report_type: str = None):
-        """Access intelligence reports"""
-        user_clearance = get_user_clearance(ctx.author.roles)
-        
-        if user_clearance == 'CIVILIAN':
-            await ctx.send("❌ You need military clearance to access intelligence reports.")
-            return
-        
-        if not report_type:
-            embed = discord.Embed(
-                title="🔍 Intelligence Report Types",
-                description="**Available Intelligence Categories:**",
-                color=Config.COLORS['info']
-            )
-            
-            embed.add_field(
-                name="📊 Threat Assessment",
-                value="`!intel threat` - Current threat levels",
-                inline=False
-            )
-            
-            embed.add_field(
-                name="🗺️ Sector Analysis",
-                value="`!intel sector` - Sector-specific intelligence",
-                inline=False
-            )
-            
-            embed.add_field(
-                name="👥 Enemy Activity",
-                value="`!intel enemy` - Enemy movement reports",
-                inline=False
-            )
-            
-            if user_clearance in ['BETA', 'OMEGA']:
-                embed.add_field(
-                    name="🔒 Classified (BETA+)",
-                    value="`!intel classified` - High-clearance intelligence",
-                    inline=False
-                )
-            
-            await ctx.send(embed=embed)
-            return
-        
-        # Generate intelligence report
-        report_type = report_type.lower()
-        
-        if report_type == 'threat':
-            embed = discord.Embed(
-                title="⚠️ THREAT ASSESSMENT REPORT",
-                description="**Current Operational Threat Level: MODERATE**",
-                color=Config.COLORS['warning']
-            )
-            
-            embed.add_field(
-                name="🔴 High Priority Threats",
-                value="• Increased hostile activity in Sector Beta\n"
-                      "• Potential insider threat reports\n"
-                      "• Communication intercepts detected",
-                inline=False
-            )
-            
-            embed.add_field(
-                name="🟡 Medium Priority Threats",
-                value="• Equipment malfunctions reported\n"
-                      "• Weather conditions affecting operations\n"
-                      "• Supply chain disruptions possible",
-                inline=False
-            )
-            
-        elif report_type == 'sector':
-            embed = discord.Embed(
-                title="🗺️ SECTOR ANALYSIS REPORT",
-                description="**Multi-Sector Intelligence Summary**",
-                color=Config.COLORS['info']
-            )
-            
-            embed.add_field(
-                name="🏙️ Urban Sectors",
-                value="• High civilian density\n"
-                      "• Complex building layouts\n"
-                      "• Multiple entry/exit points",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="🏜️ Desert Sectors",
-                value="• Limited cover available\n"
-                      "• Extreme weather conditions\n"
-                      "• Long-range visibility",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="🌊 Naval Sectors",
-                value="• Amphibious operations required\n"
-                      "• Weather-dependent missions\n"
-                      "• Specialized equipment needed",
-                inline=True
-            )
-            
-        elif report_type == 'enemy':
-            embed = discord.Embed(
-                title="👥 ENEMY ACTIVITY REPORT",
-                description="**Recent Hostile Movement Intelligence**",
-                color=Config.COLORS['error']
-            )
-            
-            embed.add_field(
-                name="📍 Confirmed Contacts",
-                value="• Squad-sized element in Sector Alpha\n"
-                      "• Patrol activity increased 40%\n"
-                      "• New defensive positions established",
-                inline=False
-            )
-            
-            embed.add_field(
-                name="🎯 Recommended Actions",
-                value="• Increase surveillance operations\n"
-                      "• Prepare counter-reconnaissance\n"
-                      "• Brief all operators on new threats",
-                inline=False
-            )
-            
-        elif report_type == 'classified' and user_clearance in ['BETA', 'OMEGA']:
-            embed = discord.Embed(
-                title="🔒 CLASSIFIED INTELLIGENCE REPORT",
-                description="**CLEARANCE LEVEL: BETA+ REQUIRED**",
-                color=Config.COLORS['error']
-            )
-            
-            embed.add_field(
-                name="🎯 High-Value Intelligence",
-                value="• [REDACTED] facility compromised\n"
-                      "• Asset extraction pending\n"
-                      "• Counter-intelligence operation active",
-                inline=False
-            )
-            
-            embed.add_field(
-                name="⚠️ Critical Alert",
-                value="• Operation security potentially compromised\n"
-                      "• All personnel advised to maintain OPSEC\n"
-                      "• Report any suspicious activity immediately",
-                inline=False
-            )
-            
-        else:
-            await ctx.send("❌ Invalid intelligence report type or insufficient clearance.")
-            return
-        
-        embed.set_footer(text="Merrywinter Security Consulting - Intelligence Division")
-        await ctx.send(embed=embed)
-    
-    @commands.command(name='sitrep')
-    async def situation_report(self, ctx):
-        """Generate situation report for current operations"""
-        user_clearance = get_user_clearance(ctx.author.roles)
-        
-        if user_clearance == 'CIVILIAN':
-            await ctx.send("❌ You need military clearance to access situation reports.")
-            return
-        
-        # Get operational statistics
-        guild_missions = await self.storage.get_guild_missions(ctx.guild.id)
-        active_missions = len([m for m in guild_missions if m.get('status') == 'active'])
-        
-        embed = discord.Embed(
-            title="📊 SITUATION REPORT (SITREP)",
-            description=f"**Report Time:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
-                       f"**Reporting Officer:** {ctx.author.mention}\n"
-                       f"**Clearance Level:** {user_clearance}",
-            color=Config.COLORS['info']
-        )
-        
-        embed.add_field(
-            name="🎯 Current Operations",
-            value=f"**Active Missions:** {active_missions}\n"
-                  f"**Deployed Operators:** {random.randint(5, 25)}\n"
-                  f"**Sectors Under Surveillance:** {random.randint(3, 8)}",
-            inline=False
-        )
-        
-        embed.add_field(
-            name="📈 Operational Status",
-            value=f"**Success Rate:** {random.randint(85, 99)}%\n"
-                  f"**Equipment Readiness:** {random.randint(90, 100)}%\n"
-                  f"**Personnel Readiness:** {random.randint(85, 95)}%",
-            inline=True
-        )
-        
-        embed.add_field(
-            name="⚠️ Current Alerts",
-            value="• Weather conditions affecting Sector Beta\n"
-                  "• Equipment maintenance scheduled\n"
-                  "• New intelligence received",
-            inline=True
-        )
-        
-        embed.set_footer(text="Merrywinter Security Consulting - Operations Center")
-        
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     """Setup function for the cog"""
