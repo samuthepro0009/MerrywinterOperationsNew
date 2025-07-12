@@ -25,47 +25,107 @@ class SecurityClearance(commands.Cog):
         """Check security clearance level"""
         target_user = user or interaction.user
         
-        clearance_level = get_user_clearance(target_user.roles)
-        chain_info = Config.CHAIN_OF_COMMAND.get(clearance_level, {
-            'title': 'Civilian',
-            'description': 'No military clearance',
-            'permissions': []
-        })
+        # Get clearance level from real guild roles
+        role_names = [role.name for role in target_user.roles]
+        clearance_level = Config.get_security_level(role_names)
+        
+        # Get detailed clearance information
+        clearance_info = {
+            'BOARD_OF_DIRECTORS': {
+                'title': 'Board of Directors',
+                'description': 'Highest level oversight and strategic direction',
+                'permissions': ['All Operations Authorized', 'Strategic Planning', 'Executive Decisions']
+            },
+            'EXECUTIVE_COMMAND': {
+                'title': 'Executive Command',
+                'description': 'Executive leadership and operational authority',
+                'permissions': ['All Operations Authorized', 'Command Authority', 'Strategic Operations']
+            },
+            'DEPARTMENT_DIRECTORS': {
+                'title': 'Department Director',
+                'description': 'Department leadership and specialized operations',
+                'permissions': ['Department Operations', 'Personnel Management', 'Resource Allocation']
+            },
+            'COMMAND_LEVEL': {
+                'title': 'Command Level',
+                'description': 'Unit command and tactical operations',
+                'permissions': ['Unit Command', 'Tactical Operations', 'Personnel Leadership']
+            },
+            'SPECIALIZED_UNITS': {
+                'title': 'Specialized Unit',
+                'description': 'Specialized operations and unit expertise',
+                'permissions': ['Specialized Operations', 'Unit Expertise', 'Advanced Training']
+            },
+            'OMEGA': {
+                'title': 'OMEGA Field Operative',
+                'description': 'Senior veteran field operations',
+                'permissions': ['Field Operations', 'Advanced Missions', 'Leadership Tasks']
+            },
+            'BETA': {
+                'title': 'BETA Field Operative',
+                'description': 'Senior field operations',
+                'permissions': ['Field Operations', 'Standard Missions', 'Team Leadership']
+            },
+            'ALPHA': {
+                'title': 'ALPHA Field Operative',
+                'description': 'Basic field operations',
+                'permissions': ['Basic Operations', 'Standard Missions', 'Team Support']
+            },
+            'ENLISTED': {
+                'title': 'Enlisted Personnel',
+                'description': 'Basic military operations',
+                'permissions': ['Basic Operations', 'Support Missions']
+            },
+            'CIVILIAN': {
+                'title': 'Civilian',
+                'description': 'No military clearance',
+                'permissions': ['Public Access Only']
+            }
+        }
+        
+        info = clearance_info.get(clearance_level, clearance_info['CIVILIAN'])
         
         # Choose color based on clearance level
-        color = Config.COLORS.get(clearance_level.lower(), Config.COLORS['primary'])
+        color_map = {
+            'BOARD_OF_DIRECTORS': 0xFF0000,      # Red
+            'EXECUTIVE_COMMAND': 0xFF4500,       # Orange Red
+            'DEPARTMENT_DIRECTORS': 0xFF8C00,    # Dark Orange
+            'COMMAND_LEVEL': 0xFFD700,           # Gold
+            'SPECIALIZED_UNITS': 0x32CD32,       # Lime Green
+            'OMEGA': 0x00FF00,                   # Green
+            'BETA': 0x00CED1,                    # Dark Turquoise
+            'ALPHA': 0x0000FF,                   # Blue
+            'ENLISTED': 0x808080,                # Gray
+            'CIVILIAN': 0xA0A0A0                 # Light Gray
+        }
+        
+        color = color_map.get(clearance_level, Config.COLORS['primary'])
         
         embed = discord.Embed(
             title=f"🔒 Security Clearance - {clearance_level}",
             description=f"**Operator:** {target_user.mention}\n"
-                       f"**Rank:** {chain_info['title']}\n"
+                       f"**Position:** {info['title']}\n"
                        f"**Clearance Level:** {clearance_level}\n"
-                       f"**Description:** {chain_info['description']}",
+                       f"**Description:** {info['description']}",
             color=color
         )
         
-        # Add clearance level indicator
-        if clearance_level == 'OMEGA':
-            embed.add_field(name="🌟 Supreme Authority", value="Full command access", inline=False)
-        elif clearance_level == 'BETA':
-            embed.add_field(name="⚡ Field Command", value="Operations and management", inline=False)
-        elif clearance_level == 'ALPHA':
-            embed.add_field(name="🎯 Ground Operations", value="Basic operations access", inline=False)
-        else:
-            embed.add_field(name="🚫 Restricted", value="No military access", inline=False)
+        # Add current roles
+        if target_user.roles:
+            relevant_roles = [role.name for role in target_user.roles if role.name != '@everyone']
+            if relevant_roles:
+                embed.add_field(
+                    name="📝 Current Roles",
+                    value='\n'.join([f"• {role}" for role in relevant_roles[:10]]),
+                    inline=False
+                )
         
         # Add permissions
-        permissions = chain_info.get('permissions', [])
-        if permissions and permissions != ['all']:
+        permissions = info.get('permissions', [])
+        if permissions:
             embed.add_field(
                 name="📋 Authorized Operations",
-                value='\n'.join([f"• {perm.replace('_', ' ').title()}" for perm in permissions]),
-                inline=False
-            )
-        elif permissions == ['all']:
-            embed.add_field(
-                name="📋 Authorized Operations",
-                value="• All Operations Authorized",
+                value='\n'.join([f"• {perm}" for perm in permissions]),
                 inline=False
             )
         
@@ -78,61 +138,144 @@ class SecurityClearance(commands.Cog):
         """Display operator roster by clearance level"""
         guild = interaction.guild
         
-        # Organize members by clearance level
+        # Organize members by clearance level using real guild data
+        executive_command = []
+        board_directors = []
+        department_directors = []
+        command_level = []
+        specialized_units = []
         omega_ops = []
         beta_ops = []
         alpha_ops = []
+        enlisted = []
         
         for member in guild.members:
             if member.bot:
                 continue
             
-            clearance = get_user_clearance(member.roles)
+            role_names = [role.name for role in member.roles]
+            clearance = Config.get_security_level(role_names)
             
-            if clearance == 'OMEGA':
+            if clearance == 'EXECUTIVE_COMMAND':
+                executive_command.append(member)
+            elif clearance == 'BOARD_OF_DIRECTORS':
+                board_directors.append(member)
+            elif clearance == 'DEPARTMENT_DIRECTORS':
+                department_directors.append(member)
+            elif clearance == 'COMMAND_LEVEL':
+                command_level.append(member)
+            elif clearance == 'SPECIALIZED_UNITS':
+                specialized_units.append(member)
+            elif clearance == 'OMEGA':
                 omega_ops.append(member)
             elif clearance == 'BETA':
                 beta_ops.append(member)
             elif clearance == 'ALPHA':
                 alpha_ops.append(member)
+            elif clearance == 'ENLISTED':
+                enlisted.append(member)
         
         embed = discord.Embed(
-            title="🎖️ Merrywinter Security Consulting - Operator Roster",
-            description="**Current Active Personnel**",
+            title="🎖️ Merrywinter Security Consulting - Personnel Roster",
+            description="**Current Active Personnel by Clearance Level**",
             color=Config.COLORS['primary']
         )
         
+        # Executive Command
+        if executive_command:
+            exec_list = '\n'.join([f"• {op.display_name}" for op in executive_command[:5]])
+            embed.add_field(
+                name="👑 Executive Command",
+                value=exec_list,
+                inline=False
+            )
+        
+        # Board of Directors
+        if board_directors:
+            board_list = '\n'.join([f"• {op.display_name}" for op in board_directors[:5]])
+            embed.add_field(
+                name="🏢 Board of Directors",
+                value=board_list,
+                inline=False
+            )
+        
+        # Department Directors
+        if department_directors:
+            dir_list = '\n'.join([f"• {op.display_name}" for op in department_directors[:10]])
+            embed.add_field(
+                name="📋 Department Directors",
+                value=dir_list,
+                inline=False
+            )
+        
+        # Command Level
+        if command_level:
+            cmd_list = '\n'.join([f"• {op.display_name}" for op in command_level[:15]])
+            embed.add_field(
+                name="⚔️ Command Level",
+                value=cmd_list,
+                inline=False
+            )
+        
+        # Specialized Units
+        if specialized_units:
+            spec_list = '\n'.join([f"• {op.display_name}" for op in specialized_units[:15]])
+            embed.add_field(
+                name="🎯 Specialized Units",
+                value=spec_list,
+                inline=False
+            )
+        
+        # OMEGA Operatives
         if omega_ops:
             omega_list = '\n'.join([f"• {op.display_name}" for op in omega_ops[:10]])
             embed.add_field(
-                name="🌟 OMEGA Command (Supreme Authority)",
+                name="🌟 OMEGA Field Operatives",
                 value=omega_list,
                 inline=False
             )
         
+        # BETA Operatives
         if beta_ops:
             beta_list = '\n'.join([f"• {op.display_name}" for op in beta_ops[:15]])
             embed.add_field(
-                name="⚡ BETA Command (Field Operations)",
+                name="⚡ BETA Field Operatives",
                 value=beta_list,
                 inline=False
             )
         
+        # ALPHA Operatives
         if alpha_ops:
             alpha_list = '\n'.join([f"• {op.display_name}" for op in alpha_ops[:20]])
             embed.add_field(
-                name="🎯 ALPHA Operators (Ground Operations)",
+                name="🎖️ ALPHA Field Operatives",
                 value=alpha_list,
                 inline=False
             )
         
-        total_ops = len(omega_ops) + len(beta_ops) + len(alpha_ops)
+        # Enlisted
+        if enlisted:
+            enlisted_list = '\n'.join([f"• {op.display_name}" for op in enlisted[:25]])
+            embed.add_field(
+                name="🔰 Enlisted Personnel",
+                value=enlisted_list,
+                inline=False
+            )
+        
+        # Statistics
+        total_ops = len(executive_command) + len(board_directors) + len(department_directors) + len(command_level) + len(specialized_units) + len(omega_ops) + len(beta_ops) + len(alpha_ops) + len(enlisted)
         embed.add_field(
             name="📊 Personnel Statistics",
-            value=f"**Total Active Operators:** {total_ops}\n"
-                  f"**OMEGA:** {len(omega_ops)}\n"
-                  f"**BETA:** {len(beta_ops)}\n"
-                  f"**ALPHA:** {len(alpha_ops)}",
+            value=f"**Total Active Personnel:** {total_ops}\n"
+                  f"**Executive Command:** {len(executive_command)}\n"
+                  f"**Board of Directors:** {len(board_directors)}\n"
+                  f"**Department Directors:** {len(department_directors)}\n"
+                  f"**Command Level:** {len(command_level)}\n"
+                  f"**Specialized Units:** {len(specialized_units)}\n"
+                  f"**OMEGA Field Ops:** {len(omega_ops)}\n"
+                  f"**BETA Field Ops:** {len(beta_ops)}\n"
+                  f"**ALPHA Field Ops:** {len(alpha_ops)}\n"
+                  f"**Enlisted:** {len(enlisted)}",
             inline=False
         )
         

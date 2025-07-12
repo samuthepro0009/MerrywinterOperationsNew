@@ -63,6 +63,13 @@ Preferred communication style: Simple, everyday language.
 ✓ All commands now use interaction.response instead of ctx.send
 ✓ Implemented proper slash command descriptions and parameter types
 ✓ Added command choices for better user experience (e.g., clearance levels, mission types)
+✓ **FIXED ROSTER AND CLEARANCE COMMANDS TO USE REAL GUILD DATA**
+✓ Updated /clearance command to read actual Discord roles from guild members
+✓ Enhanced /roster command to organize personnel by real clearance levels
+✓ Implemented proper security level detection based on 90+ configured guild roles
+✓ Added detailed clearance information with proper role hierarchy
+✓ Commands now show real member data instead of placeholder information
+✓ Color-coded clearance levels for better visual organization
 
 ### July 12, 2025 - ENCRYPTED DM SYSTEM & ANIMATED DEPLOYMENT VISUALIZER (REMOVED)
 ✓ Risolto problema duplicazione comandi deployment/operations (rimossa doppia sincronizzazione)

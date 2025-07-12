@@ -227,11 +227,16 @@ class Config:
         return guild_id == Config.AUTHORIZED_GUILD_ID
     
     @staticmethod
-    def is_moderator(user_roles, user_id):
+    def is_moderator(user_roles):
         """Check if user has moderator permissions"""
-        return (any(role in Config.MODERATOR_ROLES for role in user_roles) or
-                any(role in Config.ADMIN_ROLES for role in user_roles) or
-                user_id in Config.COMMUNITY_MANAGERS)
+        moderator_roles = ['Moderator', 'Admin', 'Administrator'] + Config.COMMAND_ROLES + Config.DIRECTOR_SECURITY_ROLES
+        return any(role in moderator_roles for role in user_roles)
+    
+    @staticmethod
+    def is_admin(user_roles):
+        """Check if user has admin permissions"""
+        admin_roles = ['Admin', 'Administrator'] + Config.CHIEF_EXECUTIVE_ROLES + Config.BOARD_OF_DIRECTORS_ROLES + Config.DIRECTOR_SECURITY_ROLES[:3]
+        return any(role in admin_roles for role in user_roles)
     
 
     
@@ -339,26 +344,27 @@ class Config:
     @classmethod
     def get_security_level(cls, roles: List[str]) -> str:
         """Get security clearance level based on roles"""
-        role_names = [role.lower() for role in roles]
-        
         # Check all clearance levels from highest to lowest
         clearance_checks = [
-            ('EXECUTIVE_COMMAND', cls.EXECUTIVE_COMMAND_ROLES),
             ('BOARD_OF_DIRECTORS', cls.BOARD_OF_DIRECTORS_ROLES),
-            ('DEPARTMENT_DIRECTORS', cls.DEPARTMENT_DIRECTORS_ROLES),
+            ('EXECUTIVE_COMMAND', cls.CHIEF_EXECUTIVE_ROLES),
+            ('DEPARTMENT_DIRECTORS', cls.DIRECTOR_SECURITY_ROLES),
             ('COMMAND_LEVEL', cls.COMMAND_ROLES),
             ('SPECIALIZED_UNITS', cls.CONVOY_ESCORT_ROLES + cls.RECON_SURVEILLANCE_ROLES + cls.TRAINING_COMBAT_ROLES + cls.EXECUTIVE_PROTECTION_ROLES + cls.TACTICAL_DEPLOYMENT_ROLES + cls.INTELLIGENCE_ROLES),
             ('OMEGA', cls.OMEGA_ROLES),
             ('BETA', cls.BETA_ROLES),
-            ('ALPHA', cls.ALPHA_ROLES),
-            ('ENLISTED', cls.ENLISTED_ROLES),
-            ('CIVILIAN', cls.CLIENT_ROLES + cls.VERIFICATION_ROLES)
+            ('ALPHA', cls.ALPHA_ROLES)
         ]
         
         for level, role_list in clearance_checks:
             for role in role_list:
-                if role and role.lower() in role_names:
+                if role in roles:
                     return level
+        
+        # Check for enlisted roles (any role starting with specific terms)
+        for role in roles:
+            if any(role.startswith(prefix) for prefix in ['Private', 'Corporal', 'Sergeant', 'Staff Sergeant', 'Specialist']):
+                return 'ENLISTED'
         
         return 'CIVILIAN'
     
