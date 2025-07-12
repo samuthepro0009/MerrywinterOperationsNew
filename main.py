@@ -101,24 +101,13 @@ class MerrywinterBot(commands.Bot):
                 except Exception as e:
                     logger.error(f"Failed to load cog {cog}: {e}")
 
-            # Sync slash commands to the authorized guild only
+            # Sync slash commands globally (avoid duplicate syncing)
             try:
-                guild = discord.Object(id=Config.AUTHORIZED_GUILD_ID)
-                synced = await self.tree.sync(guild=guild)
-                logger.info(f"Synced {len(synced)} slash commands to guild {Config.AUTHORIZED_GUILD_ID}")
-
-                # Also try global sync as fallback
                 global_synced = await self.tree.sync()
                 logger.info(f"Synced {len(global_synced)} slash commands globally")
 
             except Exception as e:
-                logger.error(f"Failed to sync slash commands: {e}")
-                # Try global sync as fallback
-                try:
-                    global_synced = await self.tree.sync()
-                    logger.info(f"Fallback: Synced {len(global_synced)} slash commands globally")
-                except Exception as e2:
-                    logger.error(f"Failed to sync slash commands globally: {e2}")
+                logger.error(f"Failed to sync slash commands globally: {e}")
 
             # Start background tasks
             self.status_update.start()

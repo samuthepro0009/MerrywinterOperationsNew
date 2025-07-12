@@ -376,34 +376,121 @@ class HighCommand(commands.Cog):
         await interaction.response.send_message(f"✅ Activity logged for operation {operation_id}!", ephemeral=True)
     
     async def _send_dm_notifications(self, guild, data, notification_type):
-        """Send DM notifications to specific roles for deployments and operations"""
+        """Send enhanced DM notifications to specific roles for deployments and operations"""
         if notification_type == 'deployment':
             target_roles = Config.DEPLOYMENT_NOTIFICATION_ROLES
-            title = f"🚁 New Deployment: {data['deployment_id']}"
-            description = f"**Sector:** {data.get('sector', 'Unknown')}\n**Units:** {data.get('units', 'Unknown')}\n**Mission:** {data.get('mission_type', 'Unknown')}\n**Priority:** {data.get('priority', 'Unknown').upper()}"
+            # Map sector codes to full names
+            sector_names = {
+                "alpha": "Sector Alpha - Urban Operations",
+                "beta": "Sector Beta - Desert Warfare", 
+                "gamma": "Sector Gamma - Naval Operations",
+                "delta": "Sector Delta - Mountain Warfare",
+                "epsilon": "Sector Epsilon - Jungle Operations",
+                "zeta": "Sector Zeta - Arctic Operations"
+            }
+            mission_names = {
+                "recon": "Reconnaissance",
+                "direct_action": "Direct Action",
+                "security": "Security Detail",
+                "convoy": "Convoy Escort",
+                "defense": "Base Defense",
+                "intelligence": "Intelligence Gathering"
+            }
+            
+            title = f"🚁 DEPLOYMENT AUTHORIZATION ISSUED"
+            description = f"**Deployment ID:** `{data['deployment_id']}`\n**Status:** `ACTIVE DEPLOYMENT`"
+            
         elif notification_type == 'operation':
             target_roles = Config.OPERATION_NOTIFICATION_ROLES
-            title = f"🎯 New Operation: {data['operation_name']}"
-            description = f"**Operation ID:** {data['operation_id']}\n**Objective:** {data.get('objective', 'Unknown')}\n**Participants:** {data.get('participants', 'Unknown')}\n**Duration:** {data.get('duration', 'Unknown')} hours"
+            title = f"🎯 OPERATION COMMENCED"
+            description = f"**Operation:** `{data['operation_name']}`\n**Operation ID:** `{data['operation_id']}`\n**Status:** `ACTIVE OPERATION`"
         else:
             return
         
-        # Create DM embed
-        embed = discord.Embed(
-            title=title,
-            description=description,
-            color=Config.COLORS['warning'],
-            timestamp=datetime.utcnow()
+        # Create enhanced DM embed
+        if data.get('classified'):
+            embed = discord.Embed(
+                title=f"🔒 [CLASSIFIED] {title}",
+                description=f"{description}\n\n⚠️ **CLASSIFIED OPERATION**\n*Executive Command Authorization Required*",
+                color=0xFF0000,  # Red for classified
+                timestamp=datetime.utcnow()
+            )
+        else:
+            embed = discord.Embed(
+                title=title,
+                description=description,
+                color=0xFF8C00,  # Orange for high priority
+                timestamp=datetime.utcnow()
+            )
+        
+        # Add detailed information based on type
+        if notification_type == 'deployment':
+            embed.add_field(
+                name="📋 Deployment Details",
+                value=f"**Sector:** {sector_names.get(data.get('sector', ''), data.get('sector', 'Unknown'))}\n"
+                      f"**Units Deployed:** {data.get('units', 'Unknown')}\n"
+                      f"**Mission Type:** {mission_names.get(data.get('mission_type', ''), data.get('mission_type', 'Unknown'))}\n"
+                      f"**Priority Level:** {data.get('priority', 'Unknown').upper()}",
+                inline=False
+            )
+            embed.add_field(
+                name="⚡ Command Response Required",
+                value="• Review deployment parameters\n• Coordinate sector resources\n• Monitor unit status\n• Report to High Command",
+                inline=False
+            )
+            
+        elif notification_type == 'operation':
+            embed.add_field(
+                name="🎯 Operation Parameters",
+                value=f"**Primary Objective:** {data.get('objective', 'Unknown')}\n"
+                      f"**Participants:** {data.get('participants', 'Unknown')} personnel\n"
+                      f"**Duration:** {data.get('duration', 'Unknown')} hours\n"
+                      f"**Start Time:** {datetime.utcnow().strftime('%H:%M:%S')} UTC",
+                inline=False
+            )
+            embed.add_field(
+                name="⚡ Command Response Required",
+                value="• Coordinate operational assets\n• Monitor mission progress\n• Maintain communication\n• Prepare contingency plans",
+                inline=False
+            )
+        
+        # Add authorization info
+        authorizing_member = guild.get_member(data.get('authorized_by') or data.get('commander'))
+        if authorizing_member and not data.get('classified'):
+            embed.add_field(
+                name="🔐 Authorization",
+                value=f"**Authorized By:** {authorizing_member.display_name}\n"
+                      f"**Command Level:** High Command\n"
+                      f"**Clearance:** Verified",
+                inline=True
+            )
+        elif data.get('classified'):
+            embed.add_field(
+                name="🔐 Authorization",
+                value="**Authorized By:** [RESTRICTED]\n"
+                      f"**Command Level:** Executive Command\n"
+                      f"**Clearance:** CLASSIFIED",
+                inline=True
+            )
+        
+        # Add timestamp and company info
+        embed.add_field(
+            name="🕐 Timestamp",
+            value=f"**Issued:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
+                  f"**Mission:** {Config.COMPANY_MOTTO}\n"
+                  f"**Status:** Active",
+            inline=True
         )
         
-        if data.get('classified'):
-            embed.add_field(name="🔒 Classification", value="CLASSIFIED OPERATION", inline=False)
+        embed.set_footer(
+            text=f"F.R.O.S.T AI v{Config.AI_VERSION} • {Config.COMPANY_NAME}",
+            icon_url=None
+        )
         
-        embed.add_field(name="⚡ Priority", value="High Command Authorization Required", inline=False)
-        embed.set_footer(text=f"F.R.O.S.T AI • {Config.COMPANY_NAME}")
-        
-        # Find members with target roles
+        # Send notifications to members with target roles
         notified_count = 0
+        failed_count = 0
+        
         for member in guild.members:
             if member.bot:
                 continue
@@ -414,12 +501,12 @@ class HighCommand(commands.Cog):
                     await member.send(embed=embed)
                     notified_count += 1
                 except discord.Forbidden:
-                    # User has DMs disabled
-                    pass
+                    failed_count += 1
                 except Exception as e:
+                    failed_count += 1
                     print(f"Failed to send DM to {member}: {e}")
         
-        print(f"Sent {notification_type} DM notifications to {notified_count} members")
+        print(f"✅ Sent {notification_type} DM notifications to {notified_count} commanders ({failed_count} failed - DMs disabled)")
 
 async def setup(bot):
     """Setup function for the cog"""
