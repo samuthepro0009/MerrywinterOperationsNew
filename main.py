@@ -61,7 +61,9 @@ class MerrywinterBot(commands.Bot):
                 'cogs.admin',
                 'cogs.high_command',
                 'cogs.intelligence',
-                'cogs.communications'
+                'cogs.communications',
+                'cogs.alerts',
+                'cogs.audit'
             ]
 
             for cog in cogs:
