@@ -7,6 +7,7 @@ This is a comprehensive Discord bot designed for Roblox PMC (Private Military Co
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+User preference: Discord bot only - no web dashboard needed.
 
 ## Recent Changes (July 2025)
 
@@ -30,9 +31,9 @@ Preferred communication style: Simple, everyday language.
 ✓ Start application workflow uses Python-based server instead of gunicorn
 ✓ Discord bot running successfully (39 slash commands, 8 cogs loaded)
 ✓ Fixed all workflow startup errors and dependency issues
-✓ Created working web dashboard with simple HTTP server (no external dependencies)
-✓ Web interface operational on port 5000 with API endpoints
-✓ Both Discord bot and web interface fully functional
+✓ Discord bot is the primary application - web dashboard removed per user preference
+✓ Cleaned up unnecessary web components and workflows
+✓ System focused on Discord bot functionality only
 ✓ Web interface shows migration completion status
 ✓ Project structure cleaned and optimized for Replit environment
 
