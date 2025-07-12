@@ -2,9 +2,10 @@ modules = ["python-3.11", "web"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["openssl", "postgresql"]
 
 [workflows]
-runButton = "Dashboard + Bot"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -18,6 +19,10 @@ args = "Discord Bot"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Web Dashboard"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
 
 [[workflows.workflow]]
 name = "Discord Bot"
@@ -49,6 +54,19 @@ args = "python simple_dashboard.py"
 task = "shell.exec"
 args = "python main.py"
 
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+waitForPort = 5000
+
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
