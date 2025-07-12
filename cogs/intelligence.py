@@ -16,15 +16,15 @@ from utils.storage import Storage
 
 class IntelligenceSystem(commands.Cog):
     """Intelligence reports and threat assessment system"""
-    
+
     def __init__(self, bot):
         self.bot = bot
         self.storage = Storage()
-    
+
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Check if interaction is in authorized guild"""
         return Config.check_guild_authorization(interaction.guild.id)
-    
+
     @app_commands.command(name="intel_report", description="Generate intelligence report (BETA+ clearance)")
     @app_commands.describe(
         report_type="Type of intelligence report",
@@ -57,37 +57,37 @@ class IntelligenceSystem(commands.Cog):
     async def intel_report(self, interaction: discord.Interaction, report_type: str, classification: str, sector: str = None):
         """Generate intelligence report"""
         user_clearance = get_user_clearance(interaction.user.roles)
-        
+
         # Check if user has BETA+ clearance
         if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
             await interaction.response.send_message("❌ You need BETA+ clearance to access intelligence reports.", ephemeral=True)
             return
-        
+
         # Check classification access
         classification_requirements = {
             'confidential': 'BETA_SECURITY',
             'secret': 'BETA_SECURITY', 
             'top_secret': 'EXECUTIVE_COMMAND'
         }
-        
+
         required_clearance = classification_requirements.get(classification, 'BETA_SECURITY')
         if not Config.has_permission(user_clearance, required_clearance):
             await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance for {classification.replace('_', ' ').title()} reports.", ephemeral=True)
             return
-        
+
         # Generate report ID
         report_id = f"INTEL-{random.randint(100000, 999999)}"
-        
+
         # Generate report content based on type
         report_content = self._generate_intel_content(report_type, sector)
-        
+
         # Create classification colors
         classification_colors = {
             'confidential': 0x0066CC,  # Blue
             'secret': 0xFF6600,       # Orange
             'top_secret': 0xFF0000    # Red
         }
-        
+
         # Handle classification display
         if classification == 'top_secret':
             classification_display = "🔴 TOP SECRET"
@@ -98,7 +98,7 @@ class IntelligenceSystem(commands.Cog):
         else:
             classification_display = "🔵 CONFIDENTIAL"
             access_note = "BETA+ Clearance Required"
-        
+
         # Create intelligence embed
         embed = discord.Embed(
             title=f"📊 INTELLIGENCE REPORT - {classification_display}",
@@ -109,7 +109,7 @@ class IntelligenceSystem(commands.Cog):
                        f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
             color=classification_colors.get(classification, 0x0066CC)
         )
-        
+
         embed.add_field(
             name="📋 Report Details",
             value=f"**Type:** {report_content['type']}\n"
@@ -118,27 +118,27 @@ class IntelligenceSystem(commands.Cog):
                   f"**Reliability:** {report_content['reliability']}",
             inline=False
         )
-        
+
         embed.add_field(
             name="🔍 Intelligence Summary",
             value=report_content['summary'],
             inline=False
         )
-        
+
         embed.add_field(
             name="⚠️ Threat Assessment",
             value=report_content['threat_level'],
             inline=False
         )
-        
+
         embed.add_field(
             name="📌 Recommendations",
             value=report_content['recommendations'],
             inline=False
         )
-        
+
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Intelligence Division")
-        
+
         # Save intelligence report
         intel_data = {
             'report_id': report_id,
@@ -150,16 +150,16 @@ class IntelligenceSystem(commands.Cog):
             'timestamp': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id
         }
-        
+
         await self.storage.save_intel_report(intel_data)
-        
+
         # Send report (ephemeral for classified content)
         is_ephemeral = classification in ['secret', 'top_secret']
         await interaction.response.send_message(embed=embed, ephemeral=is_ephemeral)
-    
+
     def _generate_intel_content(self, report_type: str, sector: str) -> dict:
         """Generate intelligence report content"""
-        
+
         sector_names = {
             'alpha': 'Alpha - Urban Operations',
             'beta': 'Beta - Desert Warfare',
@@ -168,11 +168,11 @@ class IntelligenceSystem(commands.Cog):
             'epsilon': 'Epsilon - Jungle Operations',
             'zeta': 'Zeta - Arctic Operations'
         }
-        
+
         threat_levels = ["LOW", "MODERATE", "HIGH", "CRITICAL"]
         priorities = ["LOW", "MEDIUM", "HIGH", "URGENT"]
         reliability_levels = ["C - Fairly Reliable", "B - Usually Reliable", "A - Completely Reliable"]
-        
+
         content_templates = {
             'threat': {
                 'type': 'Threat Assessment Report',
@@ -211,9 +211,9 @@ class IntelligenceSystem(commands.Cog):
                 'recommendations': f"• {random.choice(['Exploit tactical advantages', 'Reinforce key positions', 'Coordinate support elements', 'Prepare offensive operations'])}\n• {random.choice(['Assess enemy weaknesses', 'Identify strategic objectives', 'Plan tactical maneuvers', 'Coordinate with allies'])}\n• {random.choice(['Maintain tactical flexibility', 'Prepare contingency plans', 'Monitor situation changes', 'Update operational orders'])}"
             }
         }
-        
+
         template = content_templates.get(report_type, content_templates['threat'])
-        
+
         return {
             'type': template['type'],
             'sector': sector_names.get(sector, 'Multiple Sectors') if sector else 'All Sectors',
@@ -223,7 +223,7 @@ class IntelligenceSystem(commands.Cog):
             'threat_level': template['threat_level'],
             'recommendations': template['recommendations']
         }
-    
+
     @app_commands.command(name="intel_briefing", description="Request intelligence briefing (BETA+ clearance)")
     @app_commands.describe(
         briefing_type="Type of intelligence briefing requested"
@@ -240,18 +240,18 @@ class IntelligenceSystem(commands.Cog):
     async def intel_briefing(self, interaction: discord.Interaction, briefing_type: str):
         """Request intelligence briefing"""
         user_clearance = get_user_clearance(interaction.user.roles)
-        
+
         # Check if user has BETA+ clearance
         if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
             await interaction.response.send_message("❌ You need BETA+ clearance to request intelligence briefings.", ephemeral=True)
             return
-        
+
         # Generate briefing ID
         briefing_id = f"BRIEF-{random.randint(10000, 99999)}"
-        
+
         # Generate briefing content
         briefing_content = self._generate_briefing_content(briefing_type)
-        
+
         # Create briefing embed
         embed = discord.Embed(
             title=f"📊 INTELLIGENCE BRIEFING - {briefing_content['title']}",
@@ -262,27 +262,27 @@ class IntelligenceSystem(commands.Cog):
                        f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
             color=0x00FF00
         )
-        
+
         embed.add_field(
             name="📋 Briefing Summary",
             value=briefing_content['summary'],
             inline=False
         )
-        
+
         embed.add_field(
             name="🎯 Key Points",
             value=briefing_content['key_points'],
             inline=False
         )
-        
+
         embed.add_field(
             name="📌 Action Items",
             value=briefing_content['action_items'],
             inline=False
         )
-        
+
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Intelligence Division")
-        
+
         # Save briefing data
         briefing_data = {
             'briefing_id': briefing_id,
@@ -292,14 +292,14 @@ class IntelligenceSystem(commands.Cog):
             'timestamp': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id
         }
-        
+
         await self.storage.save_intel_briefing(briefing_data)
-        
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
-    
+
     def _generate_briefing_content(self, briefing_type: str) -> dict:
         """Generate intelligence briefing content"""
-        
+
         briefing_templates = {
             'daily': {
                 'title': 'DAILY INTELLIGENCE SUMMARY',
@@ -337,9 +337,9 @@ class IntelligenceSystem(commands.Cog):
                 'action_items': f"• Implement immediate security measures\n• Alert all relevant personnel\n• Coordinate emergency response\n• Provide regular updates to command staff"
             }
         }
-        
+
         return briefing_templates.get(briefing_type, briefing_templates['daily'])
-    
+
     @app_commands.command(name="intel_search", description="Search intelligence database (BETA+ clearance)")
     @app_commands.describe(
         search_term="Search term for intelligence database",
@@ -355,27 +355,27 @@ class IntelligenceSystem(commands.Cog):
     async def intel_search(self, interaction: discord.Interaction, search_term: str, classification: str = "confidential"):
         """Search intelligence database"""
         user_clearance = get_user_clearance(interaction.user.roles)
-        
+
         # Check if user has BETA+ clearance
         if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
             await interaction.response.send_message("❌ You need BETA+ clearance to search intelligence database.", ephemeral=True)
             return
-        
+
         # Check classification access
         classification_requirements = {
             'confidential': 'BETA_SECURITY',
             'secret': 'BETA_SECURITY',
             'top_secret': 'EXECUTIVE_COMMAND'
         }
-        
+
         required_clearance = classification_requirements.get(classification, 'BETA_SECURITY')
         if not Config.has_permission(user_clearance, required_clearance):
             await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to search {classification.replace('_', ' ').title()} files.", ephemeral=True)
             return
-        
+
         # Generate search results
         results = self._generate_search_results(search_term, classification)
-        
+
         # Create search results embed
         embed = discord.Embed(
             title=f"🔍 INTELLIGENCE DATABASE SEARCH",
@@ -386,7 +386,7 @@ class IntelligenceSystem(commands.Cog):
                        f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
             color=0x9932CC
         )
-        
+
         if results:
             for i, result in enumerate(results[:5], 1):  # Limit to 5 results
                 embed.add_field(
@@ -403,18 +403,18 @@ class IntelligenceSystem(commands.Cog):
                 value="No matching intelligence records found in the database.",
                 inline=False
             )
-        
+
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Intelligence Database")
-        
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
-    
+
     def _generate_search_results(self, search_term: str, classification: str) -> list:
         """Generate mock search results"""
-        
+
         # Generate 2-4 mock results
         num_results = random.randint(2, 4)
         results = []
-        
+
         for i in range(num_results):
             result = {
                 'id': f"INTEL-{random.randint(100000, 999999)}",
@@ -424,7 +424,7 @@ class IntelligenceSystem(commands.Cog):
                 'classification': classification.replace('_', ' ').title()
             }
             results.append(result)
-        
+
         return results
 
 async def setup(bot):
