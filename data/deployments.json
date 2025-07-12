@@ -92,5 +92,29 @@
     "status": "deployed",
     "timestamp": "2025-07-12T12:57:05.399741",
     "guild_id": 1114936846124843008
+  },
+  "DEP-59119": {
+    "deployment_id": "DEP-59119",
+    "authorized_by": 488052909867532288,
+    "sector": "alpha",
+    "units": 2,
+    "mission_type": "intelligence",
+    "priority": "medium",
+    "classified": false,
+    "status": "deployed",
+    "timestamp": "2025-07-12T13:03:27.795615",
+    "guild_id": 1114936846124843008
+  },
+  "DEP-29975": {
+    "deployment_id": "DEP-29975",
+    "authorized_by": 488052909867532288,
+    "sector": "alpha",
+    "units": 2,
+    "mission_type": "intelligence",
+    "priority": "medium",
+    "classified": false,
+    "status": "deployed",
+    "timestamp": "2025-07-12T13:03:27.871101",
+    "guild_id": 1114936846124843008
   }
 }
