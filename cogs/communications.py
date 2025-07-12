@@ -28,10 +28,11 @@ class CommunicationSystem(commands.Cog):
     
     @app_commands.command(name="secure_message", description="Send secure encrypted message (BETA+ clearance)")
     @app_commands.describe(
-        recipient="User to send secure message to",
+        recipient="User to send secure message to (optional if using role_target)",
         message="Secure message content",
         classification="Classification level of message",
-        auto_delete="Auto-delete message after specified minutes"
+        auto_delete="Auto-delete message after specified minutes",
+        role_target="Send to all users with this role (optional)"
     )
     @app_commands.choices(
         classification=[
@@ -47,10 +48,9 @@ class CommunicationSystem(commands.Cog):
             app_commands.Choice(name="No auto-delete", value=0)
         ]
     )
-    async def secure_message(self, interaction: discord.Interaction, recipient: discord.Member, message: str, classification: str = "confidential", auto_delete: int = 0):
+    async def secure_message(self, interaction: discord.Interaction, message: str, classification: str = "confidential", auto_delete: int = 0, recipient: discord.Member = None, role_target: discord.Role = None):
         """Send secure encrypted message"""
         user_roles = [role.name for role in interaction.user.roles]
-        recipient_clearance = get_user_clearance(recipient.roles)
         
         # Check if user has Executive Command or BETA+ clearance
         allowed_roles = ["Executive Command", "Director of Intelligence and Security"]
@@ -60,6 +60,11 @@ class CommunicationSystem(commands.Cog):
         
         if not (has_executive_access or has_beta_access):
             await interaction.response.send_message("❌ You need Executive Command role or BETA+ clearance to send secure messages.", ephemeral=True)
+            return
+        
+        # Check if either recipient or role_target is provided
+        if not recipient and not role_target:
+            await interaction.response.send_message("❌ You must specify either a recipient or a role target.", ephemeral=True)
             return
         
         # Check classification access for sender
@@ -84,12 +89,6 @@ class CommunicationSystem(commands.Cog):
                     await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
                     return
         
-        # Check if recipient has sufficient clearance (except for secret messages which everyone can receive)
-        if classification != 'secret':
-            if not Config.has_permission(recipient_clearance, required_clearance):
-                await interaction.response.send_message(f"❌ Recipient does not have sufficient clearance ({required_clearance.replace('_', ' ').title()}) to receive this message.", ephemeral=True)
-                return
-        
         # Generate message ID
         message_id = f"SECURE-{random.randint(100000, 999999)}"
         
@@ -100,22 +99,41 @@ class CommunicationSystem(commands.Cog):
             'top_secret': 0xFF0000
         }
         
-        # Send encrypted-style message to recipient
-        await self._send_encrypted_message(recipient, {
-            'message_id': message_id,
-            'sender': interaction.user.display_name,
-            'sender_clearance': user_clearance,
-            'classification': classification,
-            'content': message,
-            'auto_delete': auto_delete,
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        })
+        # Determine recipients
+        recipients = []
+        if recipient:
+            recipients.append(recipient)
+        
+        if role_target:
+            # Get all members with the specified role
+            role_members = [member for member in interaction.guild.members if role_target in member.roles and not member.bot]
+            recipients.extend(role_members)
+        
+        # Remove duplicates
+        recipients = list(set(recipients))
+        
+        if not recipients:
+            await interaction.response.send_message("❌ No valid recipients found.", ephemeral=True)
+            return
+        
+        # Send encrypted-style message to all recipients
+        for target in recipients:
+            await self._send_encrypted_message(target, {
+                'message_id': message_id,
+                'sender': interaction.user.display_name,
+                'sender_clearance': user_clearance,
+                'classification': classification,
+                'content': message,
+                'auto_delete': auto_delete,
+                'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            })
         
         # Save secure message data
         secure_data = {
             'message_id': message_id,
             'sender': interaction.user.id,
-            'recipient': recipient.id,
+            'recipients': [r.id for r in recipients],
+            'role_target': role_target.name if role_target else None,
             'classification': classification,
             'content': message,
             'auto_delete': auto_delete,
@@ -126,7 +144,10 @@ class CommunicationSystem(commands.Cog):
         await self.storage.save_secure_message(secure_data)
         
         # Confirm to sender
-        await interaction.response.send_message(f"✅ Secure message `{message_id}` sent to {recipient.display_name}", ephemeral=True)
+        if role_target:
+            await interaction.response.send_message(f"✅ Secure message `{message_id}` sent to {len(recipients)} members with role {role_target.name}", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"✅ Secure message `{message_id}` sent to {recipient.display_name}", ephemeral=True)
     
     async def _send_encrypted_message(self, recipient: discord.Member, data: dict):
         """Send encrypted-style message with animation"""
