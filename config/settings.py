@@ -34,15 +34,15 @@ class Config:
     
     # Security Clearance Levels (Based on organizational sections)
     SECURITY_LEVELS = {
-        'EXECUTIVE_COMMAND': 10,        # Executive Command
-        'BOARD_OF_DIRECTORS': 9,        # Board of Directors
-        'DEPARTMENT_DIRECTORS': 8,      # Department Directors
-        'COMMAND_LEVEL': 7,             # Command positions
-        'SPECIALIZED_UNITS': 6,         # Specialized unit roles
-        'OMEGA': 5,                     # Senior Veteran Field Operatives
-        'BETA': 4,                      # Senior Field Operatives
-        'ALPHA': 3,                     # Field Operatives
-        'ENLISTED': 2,                  # Regular enlisted
+        'EXECUTIVE_COMMAND': 10,        # Executive Command (highest officers)
+        'BOARD_OF_DIRECTORS': 9,        # Board of Directors (strategic oversight)
+        'DEPARTMENT_DIRECTORS': 8,      # Department Directors (department officers)
+        'COMMAND_LEVEL': 7,             # Sub-unit Command+ (commissioned officers)
+        'SPECIALIZED_UNITS': 6,         # Specialized unit roles (warrant officers)
+        'OMEGA': 5,                     # Highest enlisted rank (like Sergeant Major)
+        'BETA': 4,                      # Senior enlisted (like Sergeant)
+        'ALPHA': 3,                     # Junior enlisted (like Corporal)
+        'ENLISTED': 2,                  # Basic enlisted (like Private)
         'CIVILIAN': 1                   # Guests/Clients
     }
     
@@ -283,19 +283,19 @@ class Config:
     # PMC Chain of Command
     CHAIN_OF_COMMAND = {
         'OMEGA': {
-            'title': 'Commander',
-            'permissions': ['all'],
-            'description': 'Supreme command authority'
+            'title': 'Senior Enlisted',
+            'permissions': ['advanced_operations', 'training_leadership', 'enlisted_supervision'],
+            'description': 'Highest enlisted rank - senior field operators and trainers'
         },
         'BETA': {
-            'title': 'Lieutenant',
-            'permissions': ['moderate', 'mission_planning', 'operator_management'],
-            'description': 'Field command and operations'
+            'title': 'Enlisted NCO',
+            'permissions': ['standard_operations', 'team_leadership', 'training_support'],
+            'description': 'Non-commissioned officers - experienced field operators'
         },
         'ALPHA': {
-            'title': 'Operator',
-            'permissions': ['basic_operations'],
-            'description': 'Ground operations and reconnaissance'
+            'title': 'Junior Enlisted',
+            'permissions': ['basic_operations', 'support_duties'],
+            'description': 'Junior enlisted personnel - basic field operations'
         }
     }
     

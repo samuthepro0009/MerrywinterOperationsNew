@@ -57,19 +57,19 @@ class SecurityClearance(commands.Cog):
                 'permissions': ['Specialized Operations', 'Unit Expertise', 'Advanced Training']
             },
             'OMEGA': {
-                'title': 'OMEGA Field Operative',
-                'description': 'Senior veteran field operations',
-                'permissions': ['Field Operations', 'Advanced Missions', 'Leadership Tasks']
+                'title': 'OMEGA Senior Enlisted',
+                'description': 'Highest enlisted rank - senior NCOs and veteran operators',
+                'permissions': ['Advanced Operations', 'Enlisted Supervision', 'Training Leadership', 'Field Command']
             },
             'BETA': {
-                'title': 'BETA Field Operative',
-                'description': 'Senior field operations',
-                'permissions': ['Field Operations', 'Standard Missions', 'Team Leadership']
+                'title': 'BETA Enlisted NCO',
+                'description': 'Non-commissioned officers - experienced enlisted personnel',
+                'permissions': ['Standard Operations', 'Team Leadership', 'Training Support', 'Squad Command']
             },
             'ALPHA': {
-                'title': 'ALPHA Field Operative',
-                'description': 'Basic field operations',
-                'permissions': ['Basic Operations', 'Standard Missions', 'Team Support']
+                'title': 'ALPHA Junior Enlisted',
+                'description': 'Junior enlisted personnel - basic field operators',
+                'permissions': ['Basic Operations', 'Support Duties', 'Training Participation']
             },
             'ENLISTED': {
                 'title': 'Enlisted Personnel',
@@ -286,9 +286,9 @@ class SecurityClearance(commands.Cog):
     @app_commands.command(name="promote", description="Promote an operator (Admin only)")
     @app_commands.describe(user="User to promote", clearance_level="Clearance level (ALPHA, BETA, OMEGA)")
     @app_commands.choices(clearance_level=[
-        app_commands.Choice(name="ALPHA - Ground Operations", value="ALPHA"),
-        app_commands.Choice(name="BETA - Field Command", value="BETA"),
-        app_commands.Choice(name="OMEGA - Supreme Authority", value="OMEGA")
+        app_commands.Choice(name="ALPHA - Junior Enlisted", value="ALPHA"),
+        app_commands.Choice(name="BETA - Enlisted NCO", value="BETA"),
+        app_commands.Choice(name="OMEGA - Senior Enlisted", value="OMEGA")
     ])
     async def promote_operator(self, interaction: discord.Interaction, user: discord.Member, clearance_level: str):
         """Promote an operator (Admin only)"""
@@ -350,8 +350,8 @@ class SecurityClearance(commands.Cog):
     @app_commands.command(name="demote", description="Demote an operator (Admin only)")
     @app_commands.describe(user="User to demote", clearance_level="New clearance level (ALPHA, BETA, CIVILIAN)")
     @app_commands.choices(clearance_level=[
-        app_commands.Choice(name="ALPHA - Ground Operations", value="ALPHA"),
-        app_commands.Choice(name="BETA - Field Command", value="BETA"),
+        app_commands.Choice(name="ALPHA - Junior Enlisted", value="ALPHA"),
+        app_commands.Choice(name="BETA - Enlisted NCO", value="BETA"),
         app_commands.Choice(name="CIVILIAN - No Clearance", value="CIVILIAN")
     ])
     async def demote_operator(self, interaction: discord.Interaction, user: discord.Member, clearance_level: str):
