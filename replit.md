@@ -70,6 +70,17 @@ Preferred communication style: Simple, everyday language.
 ✓ Added detailed clearance information with proper role hierarchy
 ✓ Commands now show real member data instead of placeholder information
 ✓ Color-coded clearance levels for better visual organization
+✓ **UPDATED EXECUTIVE COMMAND STRUCTURE**
+✓ Moved Director of Strategic Operations to Executive Command clearance level
+✓ Moved Director of Security Architecture to Executive Command clearance level
+✓ Moved Compliance & Oversight Director to Executive Command clearance level
+✓ Updated security level detection to reflect proper command hierarchy
+✓ **ADDED ATTENDANTS FEATURE TO DEPLOYMENT AND OPERATIONS**
+✓ Added attendants parameter to /deployment command for personnel tracking
+✓ Added attendants parameter to /operation_start command for personnel tracking
+✓ Attendants section shows participant names and clearance levels
+✓ Attendants data saved to deployment and operation logs for record keeping
+✓ Support for user mentions (@user1 @user2) in attendants field
 
 ### July 12, 2025 - ENCRYPTED DM SYSTEM & ANIMATED DEPLOYMENT VISUALIZER (REMOVED)
 ✓ Risolto problema duplicazione comandi deployment/operations (rimossa doppia sincronizzazione)

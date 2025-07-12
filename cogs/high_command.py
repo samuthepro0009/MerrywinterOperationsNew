@@ -34,7 +34,8 @@ class HighCommand(commands.Cog):
         units="Number of units to deploy",
         mission_type="Type of mission for deployment",
         priority="Priority level of deployment",
-        classified="Mark as classified operation (Executive Command only)"
+        classified="Mark as classified operation (Executive Command only)",
+        attendants="Personnel attending deployment (mention users: @user1 @user2)"
     )
     @app_commands.choices(
         sector=[
@@ -60,7 +61,7 @@ class HighCommand(commands.Cog):
             app_commands.Choice(name="Low", value="low")
         ]
     )
-    async def deployment(self, interaction: discord.Interaction, sector: str, units: int, mission_type: str, priority: str, classified: bool = False):
+    async def deployment(self, interaction: discord.Interaction, sector: str, units: int, mission_type: str, priority: str, classified: bool = False, attendants: str = None):
         """Deploy units to operational sectors"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
@@ -83,6 +84,20 @@ class HighCommand(commands.Cog):
         if not deployment_channel:
             await interaction.response.send_message("❌ Deployment channel not found.", ephemeral=True)
             return
+        
+        # Parse attendants
+        attendant_list = []
+        if attendants:
+            # Extract user mentions from the attendants string
+            import re
+            user_mentions = re.findall(r'<@!?(\d+)>', attendants)
+            for user_id in user_mentions:
+                try:
+                    user = interaction.guild.get_member(int(user_id))
+                    if user:
+                        attendant_list.append(user)
+                except:
+                    pass
         
         # Generate deployment ID
         deployment_id = f"DEP-{random.randint(10000, 99999)}"
@@ -159,6 +174,19 @@ class HighCommand(commands.Cog):
             inline=False
         )
         
+        # Add attendants section if there are any
+        if attendant_list:
+            attendant_names = []
+            for user in attendant_list:
+                user_clearance = get_user_clearance(user.roles)
+                attendant_names.append(f"• {user.display_name} ({user_clearance})")
+            
+            embed.add_field(
+                name="👥 Attendants",
+                value='\n'.join(attendant_names[:10]),  # Limit to 10 to avoid embed limits
+                inline=False
+            )
+        
         embed.set_footer(text=f"{Config.COMPANY_NAME} - High Command Operations")
         
         # Send to deployment channel
@@ -173,6 +201,7 @@ class HighCommand(commands.Cog):
             'mission_type': mission_type,
             'priority': priority,
             'classified': classified,
+            'attendants': [{'id': user.id, 'name': user.display_name, 'clearance': get_user_clearance(user.roles)} for user in attendant_list],
             'status': 'deployed',
             'timestamp': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id
@@ -191,9 +220,10 @@ class HighCommand(commands.Cog):
         objective="Primary objective of the operation",
         participants="Number of participants",
         duration="Expected duration in hours",
-        classified="Mark as classified operation (Executive Command only)"
+        classified="Mark as classified operation (Executive Command only)",
+        attendants="Personnel attending operation (mention users: @user1 @user2)"
     )
-    async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int, classified: bool = False):
+    async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int, classified: bool = False, attendants: str = None):
         """Start a new operation"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
@@ -216,6 +246,20 @@ class HighCommand(commands.Cog):
         if not operation_channel:
             await interaction.response.send_message("❌ Operation start channel not found.", ephemeral=True)
             return
+        
+        # Parse attendants
+        attendant_list = []
+        if attendants:
+            # Extract user mentions from the attendants string
+            import re
+            user_mentions = re.findall(r'<@!?(\d+)>', attendants)
+            for user_id in user_mentions:
+                try:
+                    user = interaction.guild.get_member(int(user_id))
+                    if user:
+                        attendant_list.append(user)
+                except:
+                    pass
         
         # Generate operation ID
         operation_id = f"OP-{random.randint(1000, 9999)}"
@@ -267,6 +311,19 @@ class HighCommand(commands.Cog):
             inline=False
         )
         
+        # Add attendants section if there are any
+        if attendant_list:
+            attendant_names = []
+            for user in attendant_list:
+                user_clearance = get_user_clearance(user.roles)
+                attendant_names.append(f"• {user.display_name} ({user_clearance})")
+            
+            embed.add_field(
+                name="👥 Attendants",
+                value='\n'.join(attendant_names[:10]),  # Limit to 10 to avoid embed limits
+                inline=False
+            )
+        
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Operation Command")
         
         # Send to operation channel
@@ -281,6 +338,7 @@ class HighCommand(commands.Cog):
             'participants': participants,
             'duration': duration,
             'classified': classified,
+            'attendants': [{'id': user.id, 'name': user.display_name, 'clearance': get_user_clearance(user.roles)} for user in attendant_list],
             'status': 'active',
             'start_time': datetime.utcnow().isoformat(),
             'guild_id': interaction.guild.id

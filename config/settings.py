@@ -50,10 +50,10 @@ class Config:
     BOARD_OF_DIRECTORS_ROLES = ["Board of Directors"]
     
     # Executive Level Roles
-    CHIEF_EXECUTIVE_ROLES = ["Executive Director", "Executive Command"]
+    CHIEF_EXECUTIVE_ROLES = ["Executive Director", "Executive Command", "Director of Strategic Operations", "Director of Security Architecture", "Compliance & Oversight Director"]
     
     # Director Level Roles - Complete list
-    DIRECTOR_SECURITY_ROLES = ["Director of Strategic Operations", "Director of Security Architecture", "Compliance & Oversight Director", "Director of Security Operations", "Director of Cybersecurity Operations", "Director of Personnel and Clearance", "Director of Innovation and Technology", "Department Directors", "Director of Tactical Operations", "Director of Intelligence and Security", "Escort Security Units Director"]
+    DIRECTOR_SECURITY_ROLES = ["Director of Security Operations", "Director of Cybersecurity Operations", "Director of Personnel and Clearance", "Director of Innovation and Technology", "Department Directors", "Director of Tactical Operations", "Director of Intelligence and Security", "Escort Security Units Director"]
     
     # Command Level Roles - All command positions
     COMMAND_ROLES = ["Tactical Operations Section Command", "Tactical Deployment Command", "Convoy & Armored Escort Division Command", "Recon & Surveillance Command", "Training & Combat Readiness Department Command", "Executive Protection Unit Command", "Intelligence and Security Section Command", "Human Intelligence Detachment Command", "Psychological Operations Detachment Command", "Open Source Intelligence Command", "Tactical Operations Sub Unit Command", "Blue Team Command", "Red Team Command", "Convoy & Control Commander", "Undercover Units Command", "Long Range Recon Team Command", "Advanced Tactical Training Teams Command", "Close Protection Teams Command", "Emergency Evacuation & Extraction Unit Command"]
