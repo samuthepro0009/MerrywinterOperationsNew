@@ -26,7 +26,7 @@ class AlertSystem(commands.Cog):
         """Check if interaction is in authorized guild"""
         return Config.check_guild_authorization(interaction.guild.id)
 
-    @app_commands.command(name="emergency_alert", description="Broadcast emergency alert (Executive Command only)")
+    @app_commands.command(name="broadcast_alert", description="Broadcast system-wide alert (Executive Command only)")
     @app_commands.describe(
         alert_type="Type of emergency alert",
         severity="Severity level of the alert",
@@ -49,7 +49,7 @@ class AlertSystem(commands.Cog):
             app_commands.Choice(name="Low", value="low")
         ]
     )
-    async def emergency_alert(self, interaction: discord.Interaction, alert_type: str, severity: str, message: str, duration: int = 15):
+    async def broadcast_alert(self, interaction: discord.Interaction, alert_type: str, severity: str, message: str, duration: int = 15):
         """Broadcast emergency alert"""
         user_roles = [role.name for role in interaction.user.roles]
         
