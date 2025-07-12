@@ -49,12 +49,17 @@ class CommunicationSystem(commands.Cog):
     )
     async def secure_message(self, interaction: discord.Interaction, recipient: discord.Member, message: str, classification: str = "confidential", auto_delete: int = 0):
         """Send secure encrypted message"""
-        user_clearance = get_user_clearance(interaction.user.roles)
+        user_roles = [role.name for role in interaction.user.roles]
         recipient_clearance = get_user_clearance(recipient.roles)
         
-        # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA'):
-            await interaction.response.send_message("❌ You need BETA+ clearance to send secure messages.", ephemeral=True)
+        # Check if user has Executive Command or BETA+ clearance
+        allowed_roles = ["Executive Command", "Director of Intelligence and Security"]
+        has_executive_access = any(role in user_roles for role in allowed_roles)
+        user_clearance = get_user_clearance(interaction.user.roles)
+        has_beta_access = Config.has_permission(user_clearance, 'BETA')
+        
+        if not (has_executive_access or has_beta_access):
+            await interaction.response.send_message("❌ You need Executive Command role or BETA+ clearance to send secure messages.", ephemeral=True)
             return
         
         # Check classification access for sender
@@ -64,10 +69,13 @@ class CommunicationSystem(commands.Cog):
             'top_secret': 'EXECUTIVE_COMMAND'
         }
         
-        required_clearance = classification_requirements.get(classification, 'BETA_SECURITY')
-        if not Config.has_permission(user_clearance, required_clearance):
-            await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
-            return
+        required_clearance = classification_requirements.get(classification, 'BETA')
+        
+        # Executive Command can send any classification
+        if not has_executive_access:
+            if not Config.has_permission(user_clearance, required_clearance):
+                await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
+                return
         
         # Check if recipient has sufficient clearance
         if not Config.has_permission(recipient_clearance, required_clearance):
