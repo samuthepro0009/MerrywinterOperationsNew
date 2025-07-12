@@ -65,22 +65,30 @@ class CommunicationSystem(commands.Cog):
         # Check classification access for sender
         classification_requirements = {
             'confidential': 'BETA',
-            'secret': 'BETA',
+            'secret': 'EXECUTIVE_COMMAND',  # Only Executive Command can send secret messages
             'top_secret': 'EXECUTIVE_COMMAND'
         }
         
         required_clearance = classification_requirements.get(classification, 'BETA')
         
-        # Executive Command can send any classification
-        if not has_executive_access:
-            if not Config.has_permission(user_clearance, required_clearance):
-                await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
+        # Check if user has required clearance for this classification
+        if classification == 'secret' or classification == 'top_secret':
+            # Only Executive Command can send secret/top secret messages
+            if not has_executive_access:
+                await interaction.response.send_message(f"❌ Only Executive Command can send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
                 return
+        else:
+            # For confidential messages, check normal clearance
+            if not has_executive_access:
+                if not Config.has_permission(user_clearance, required_clearance):
+                    await interaction.response.send_message(f"❌ You need {required_clearance.replace('_', ' ').title()} clearance to send {classification.replace('_', ' ').title()} messages.", ephemeral=True)
+                    return
         
-        # Check if recipient has sufficient clearance
-        if not Config.has_permission(recipient_clearance, required_clearance):
-            await interaction.response.send_message(f"❌ Recipient does not have sufficient clearance ({required_clearance.replace('_', ' ').title()}) to receive this message.", ephemeral=True)
-            return
+        # Check if recipient has sufficient clearance (except for secret messages which everyone can receive)
+        if classification != 'secret':
+            if not Config.has_permission(recipient_clearance, required_clearance):
+                await interaction.response.send_message(f"❌ Recipient does not have sufficient clearance ({required_clearance.replace('_', ' ').title()}) to receive this message.", ephemeral=True)
+                return
         
         # Generate message ID
         message_id = f"SECURE-{random.randint(100000, 999999)}"
