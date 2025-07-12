@@ -406,3 +406,33 @@ class Storage:
     async def load_after_action_reports(self):
         """Load after action reports data"""
         return await self._load_json(self.after_action_reports_file)
+    
+    # Intelligence Management
+    async def save_intel_report(self, intel_data: Dict[str, Any]):
+        """Save intelligence report data"""
+        async with self._lock:
+            reports = await self._load_json(os.path.join(self.data_dir, 'intel_reports.json'))
+            reports[intel_data['report_id']] = intel_data
+            await self._save_json(os.path.join(self.data_dir, 'intel_reports.json'), reports)
+    
+    async def save_intel_briefing(self, briefing_data: Dict[str, Any]):
+        """Save intelligence briefing data"""
+        async with self._lock:
+            briefings = await self._load_json(os.path.join(self.data_dir, 'intel_briefings.json'))
+            briefings[briefing_data['briefing_id']] = briefing_data
+            await self._save_json(os.path.join(self.data_dir, 'intel_briefings.json'), briefings)
+    
+    # Communication Management
+    async def save_secure_message(self, message_data: Dict[str, Any]):
+        """Save secure message data"""
+        async with self._lock:
+            messages = await self._load_json(os.path.join(self.data_dir, 'secure_messages.json'))
+            messages[message_data['message_id']] = message_data
+            await self._save_json(os.path.join(self.data_dir, 'secure_messages.json'), messages)
+    
+    async def save_emergency_alert(self, alert_data: Dict[str, Any]):
+        """Save emergency alert data"""
+        async with self._lock:
+            alerts = await self._load_json(os.path.join(self.data_dir, 'emergency_alerts.json'))
+            alerts[alert_data['alert_id']] = alert_data
+            await self._save_json(os.path.join(self.data_dir, 'emergency_alerts.json'), alerts)
