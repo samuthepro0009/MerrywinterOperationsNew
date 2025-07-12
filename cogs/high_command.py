@@ -195,6 +195,7 @@ class HighCommand(commands.Cog):
     )
     async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int, classified: bool = False):
         """Start a new operation"""
+        print(f"🔍 DEBUG: operation_start called by {interaction.user.display_name} - Operation: {operation_name}")
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Chief+ clearance
@@ -270,7 +271,9 @@ class HighCommand(commands.Cog):
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Operation Command")
         
         # Send to operation channel
+        print(f"🔍 DEBUG: Sending operation message to channel {operation_channel.name} for {operation_name}")
         await operation_channel.send(embed=embed)
+        print(f"🔍 DEBUG: Operation message sent successfully")
         
         # Save operation data
         operation_data = {

@@ -68,5 +68,29 @@
     "status": "deployed",
     "timestamp": "2025-07-12T12:54:50.002136",
     "guild_id": 1114936846124843008
+  },
+  "DEP-67191": {
+    "deployment_id": "DEP-67191",
+    "authorized_by": 488052909867532288,
+    "sector": "alpha",
+    "units": 4,
+    "mission_type": "direct_action",
+    "priority": "critical",
+    "classified": false,
+    "status": "deployed",
+    "timestamp": "2025-07-12T12:57:05.357395",
+    "guild_id": 1114936846124843008
+  },
+  "DEP-27034": {
+    "deployment_id": "DEP-27034",
+    "authorized_by": 488052909867532288,
+    "sector": "alpha",
+    "units": 4,
+    "mission_type": "direct_action",
+    "priority": "critical",
+    "classified": false,
+    "status": "deployed",
+    "timestamp": "2025-07-12T12:57:05.399741",
+    "guild_id": 1114936846124843008
   }
 }
