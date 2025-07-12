@@ -8,5 +8,31 @@
     "auto_delete": 0,
     "timestamp": "2025-07-12T18:03:09.750016",
     "guild_id": 1114936846124843008
+  },
+  "SECURE-978773": {
+    "message_id": "SECURE-978773",
+    "sender": 488052909867532288,
+    "recipients": [
+      700659364574396438
+    ],
+    "role_target": null,
+    "classification": "top_secret",
+    "content": "sesso culo",
+    "auto_delete": 0,
+    "timestamp": "2025-07-12T18:17:13.761212",
+    "guild_id": 1114936846124843008
+  },
+  "SECURE-376014": {
+    "message_id": "SECURE-376014",
+    "sender": 488052909867532288,
+    "recipients": [
+      488052909867532288
+    ],
+    "role_target": null,
+    "classification": "top_secret",
+    "content": "sesso culo",
+    "auto_delete": 0,
+    "timestamp": "2025-07-12T18:17:28.136029",
+    "guild_id": 1114936846124843008
   }
 }
