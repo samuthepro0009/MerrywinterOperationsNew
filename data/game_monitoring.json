@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "thresholds": {
+    "low_players": 2,
+    "high_players": 4,
+    "server_down": 0,
+    "rapid_change": 20
+  },
+  "notification_channel_id": 1393249520388935793,
+  "last_updated": "2025-07-12T10:34:52.129101"
+}

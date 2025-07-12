@@ -18,7 +18,7 @@ class Config:
     COMPANY_NAME = "Merrywinter Security Consulting"
     COMPANY_MOTTO = "Sub umbra, vincimus"
     COMPANY_ESTABLISHED = "Est. 2025"
-    COMPANY_FOUNDERS = ["Rev", "Samu", "Fraa", "Luca"]
+    COMPANY_FOUNDERS = ["Rev", "Samu", "Fra", "Luca"]
     
     # AI System Information (FROST AI)
     AI_NAME = "F.R.O.S.T"
@@ -173,8 +173,8 @@ class Config:
     ROBLOX_GAME_ID = None  # To be configured
     ROBLOX_UNIVERSE_ID = None  # To be configured
     ROBLOX_API_KEY = None  # To be configured via secrets
-    ROBLOX_GROUP_ID = None  # PMC group ID
-    ROBLOX_PLACE_ID = None  # Main game place ID
+    ROBLOX_GROUP_ID = 86697652  # PMC group ID
+    ROBLOX_PLACE_ID = 87810046983709  # Main game place ID
     
     # Roblox API Configuration
     ROBLOX_API_BASE = "https://api.roblox.com"
