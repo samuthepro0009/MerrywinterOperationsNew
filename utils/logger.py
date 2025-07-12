@@ -16,6 +16,10 @@ def setup_logger(name='MerrywinterBot', level=logging.INFO):
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
+    # Prevent duplicate handlers
+    if logger.handlers:
+        logger.handlers.clear()
+    
     # Create formatter
     formatter = logging.Formatter(
         '[%(asctime)s] [%(levelname)s] %(name)s: %(message)s',

@@ -180,6 +180,9 @@ class HighCommand(commands.Cog):
         
         await self.storage.save_deployment(deployment_data)
         
+        # Send DM notifications to selected roles
+        await self._send_dm_notifications(interaction.guild, deployment_data, 'deployment')
+        
         await interaction.response.send_message(f"✅ Deployment {deployment_id} authorized successfully!", ephemeral=True)
     
     @app_commands.command(name="operation_start", description="Start a new operation (Chief+ only)")
@@ -285,6 +288,9 @@ class HighCommand(commands.Cog):
         
         await self.storage.save_operation(operation_data)
         
+        # Send DM notifications to selected roles
+        await self._send_dm_notifications(interaction.guild, operation_data, 'operation')
+        
         await interaction.response.send_message(f"✅ Operation {operation_name} ({operation_id}) has been started!", ephemeral=True)
     
     @app_commands.command(name="operation_log", description="Log operation activities (Director+ only)")
@@ -368,6 +374,52 @@ class HighCommand(commands.Cog):
         await self.storage.save_operation_log(log_data)
         
         await interaction.response.send_message(f"✅ Activity logged for operation {operation_id}!", ephemeral=True)
+    
+    async def _send_dm_notifications(self, guild, data, notification_type):
+        """Send DM notifications to specific roles for deployments and operations"""
+        if notification_type == 'deployment':
+            target_roles = Config.DEPLOYMENT_NOTIFICATION_ROLES
+            title = f"🚁 New Deployment: {data['deployment_id']}"
+            description = f"**Sector:** {data.get('sector', 'Unknown')}\n**Units:** {data.get('units', 'Unknown')}\n**Mission:** {data.get('mission_type', 'Unknown')}\n**Priority:** {data.get('priority', 'Unknown').upper()}"
+        elif notification_type == 'operation':
+            target_roles = Config.OPERATION_NOTIFICATION_ROLES
+            title = f"🎯 New Operation: {data['operation_name']}"
+            description = f"**Operation ID:** {data['operation_id']}\n**Objective:** {data.get('objective', 'Unknown')}\n**Participants:** {data.get('participants', 'Unknown')}\n**Duration:** {data.get('duration', 'Unknown')} hours"
+        else:
+            return
+        
+        # Create DM embed
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=Config.COLORS['warning'],
+            timestamp=datetime.utcnow()
+        )
+        
+        if data.get('classified'):
+            embed.add_field(name="🔒 Classification", value="CLASSIFIED OPERATION", inline=False)
+        
+        embed.add_field(name="⚡ Priority", value="High Command Authorization Required", inline=False)
+        embed.set_footer(text=f"F.R.O.S.T AI • {Config.COMPANY_NAME}")
+        
+        # Find members with target roles
+        notified_count = 0
+        for member in guild.members:
+            if member.bot:
+                continue
+                
+            member_role_names = [role.name for role in member.roles]
+            if any(role_name in member_role_names for role_name in target_roles):
+                try:
+                    await member.send(embed=embed)
+                    notified_count += 1
+                except discord.Forbidden:
+                    # User has DMs disabled
+                    pass
+                except Exception as e:
+                    print(f"Failed to send DM to {member}: {e}")
+        
+        print(f"Sent {notification_type} DM notifications to {notified_count} members")
 
 async def setup(bot):
     """Setup function for the cog"""

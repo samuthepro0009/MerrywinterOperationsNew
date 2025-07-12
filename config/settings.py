@@ -73,6 +73,26 @@ class Config:
     
     # Additional roles
     VERIFICATION_ROLES = ["Verified", "Unverified"]
+    
+    # DM Notification Configuration - Roles that receive DMs for deployments and operations
+    DEPLOYMENT_NOTIFICATION_ROLES = [
+        "Executive Director", 
+        "Executive Command",
+        "Director of Strategic Operations",
+        "Director of Tactical Operations", 
+        "Tactical Operations Section Command",
+        "Tactical Deployment Command"
+    ]
+    
+    OPERATION_NOTIFICATION_ROLES = [
+        "Executive Director",
+        "Executive Command", 
+        "Director of Strategic Operations",
+        "Director of Tactical Operations",
+        "Director of Intelligence and Security",
+        "Tactical Operations Section Command",
+        "Intelligence and Security Section Command"
+    ]
     CLIENT_ROLES = ["Client", "Guest"]
     ENTRANT_ROLES = ["Entrant"]
     
