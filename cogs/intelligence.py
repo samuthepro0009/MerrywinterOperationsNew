@@ -25,7 +25,7 @@ class IntelligenceSystem(commands.Cog):
         """Check if interaction is in authorized guild"""
         return Config.check_guild_authorization(interaction.guild.id)
 
-    @app_commands.command(name="intel_report", description="Generate intelligence report (BETA+ clearance)")
+    @app_commands.command(name="intel_report", description="Generate intelligence report (Executive Command/Intelligence Director only)")
     @app_commands.describe(
         report_type="Type of intelligence report",
         classification="Classification level of the report",
@@ -56,11 +56,12 @@ class IntelligenceSystem(commands.Cog):
     )
     async def intel_report(self, interaction: discord.Interaction, report_type: str, classification: str, sector: str = None):
         """Generate intelligence report"""
-        user_clearance = get_user_clearance(interaction.user.roles)
-
-        # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA'):
-            await interaction.response.send_message("❌ You need BETA+ clearance to access intelligence reports.", ephemeral=True)
+        user_roles = [role.name for role in interaction.user.roles]
+        
+        # Check if user has Executive Command or Intelligence Director role
+        allowed_roles = ["Executive Command", "Director of Intelligence and Security"]
+        if not any(role in user_roles for role in allowed_roles):
+            await interaction.response.send_message("❌ Access denied. Only Executive Command and Intelligence Director can access intelligence reports.", ephemeral=True)
             return
 
         # Check classification access
@@ -224,7 +225,7 @@ class IntelligenceSystem(commands.Cog):
             'recommendations': template['recommendations']
         }
 
-    @app_commands.command(name="intel_briefing", description="Request intelligence briefing (BETA+ clearance)")
+    @app_commands.command(name="intel_briefing", description="Request intelligence briefing (Executive Command/Intelligence Director only)")
     @app_commands.describe(
         briefing_type="Type of intelligence briefing requested"
     )
@@ -239,11 +240,12 @@ class IntelligenceSystem(commands.Cog):
     )
     async def intel_briefing(self, interaction: discord.Interaction, briefing_type: str):
         """Request intelligence briefing"""
-        user_clearance = get_user_clearance(interaction.user.roles)
-
-        # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA'):
-            await interaction.response.send_message("❌ You need BETA+ clearance to request intelligence briefings.", ephemeral=True)
+        user_roles = [role.name for role in interaction.user.roles]
+        
+        # Check if user has Executive Command or Intelligence Director role
+        allowed_roles = ["Executive Command", "Director of Intelligence and Security"]
+        if not any(role in user_roles for role in allowed_roles):
+            await interaction.response.send_message("❌ Access denied. Only Executive Command and Intelligence Director can request intelligence briefings.", ephemeral=True)
             return
 
         # Generate briefing ID
@@ -340,7 +342,7 @@ class IntelligenceSystem(commands.Cog):
 
         return briefing_templates.get(briefing_type, briefing_templates['daily'])
 
-    @app_commands.command(name="intel_search", description="Search intelligence database (BETA+ clearance)")
+    @app_commands.command(name="intel_search", description="Search intelligence database (Executive Command/Intelligence Director only)")
     @app_commands.describe(
         search_term="Search term for intelligence database",
         classification="Maximum classification level to search"
@@ -354,11 +356,12 @@ class IntelligenceSystem(commands.Cog):
     )
     async def intel_search(self, interaction: discord.Interaction, search_term: str, classification: str = "confidential"):
         """Search intelligence database"""
-        user_clearance = get_user_clearance(interaction.user.roles)
-
-        # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA'):
-            await interaction.response.send_message("❌ You need BETA+ clearance to search intelligence database.", ephemeral=True)
+        user_roles = [role.name for role in interaction.user.roles]
+        
+        # Check if user has Executive Command or Intelligence Director role
+        allowed_roles = ["Executive Command", "Director of Intelligence and Security"]
+        if not any(role in user_roles for role in allowed_roles):
+            await interaction.response.send_message("❌ Access denied. Only Executive Command and Intelligence Director can search intelligence database.", ephemeral=True)
             return
 
         # Check classification access
