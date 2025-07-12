@@ -53,14 +53,14 @@ class CommunicationSystem(commands.Cog):
         recipient_clearance = get_user_clearance(recipient.roles)
         
         # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
+        if not Config.has_permission(user_clearance, 'BETA'):
             await interaction.response.send_message("❌ You need BETA+ clearance to send secure messages.", ephemeral=True)
             return
         
         # Check classification access for sender
         classification_requirements = {
-            'confidential': 'BETA_SECURITY',
-            'secret': 'BETA_SECURITY',
+            'confidential': 'BETA',
+            'secret': 'BETA',
             'top_secret': 'EXECUTIVE_COMMAND'
         }
         
@@ -222,7 +222,7 @@ class CommunicationSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Director+ clearance
-        if not Config.has_permission(user_clearance, 'DIRECTOR_SECURITY'):
+        if not Config.has_permission(user_clearance, 'DEPARTMENT_DIRECTORS'):
             await interaction.response.send_message("❌ You need Director+ clearance to send emergency alerts.", ephemeral=True)
             return
         
@@ -310,7 +310,7 @@ class CommunicationSystem(commands.Cog):
     async def _broadcast_emergency_alert(self, guild: discord.Guild, embed: discord.Embed, alert_type: str, severity: str):
         """Broadcast emergency alert to appropriate members"""
         # Get members with appropriate clearance
-        clearance_levels = ['EXECUTIVE_COMMAND', 'DIRECTOR_SECURITY', 'CHIEF_OPERATIONS', 'BETA_SECURITY']
+        clearance_levels = ['EXECUTIVE_COMMAND', 'DEPARTMENT_DIRECTORS', 'COMMAND_LEVEL', 'BETA']
         
         for member in guild.members:
             if member.bot:
@@ -337,7 +337,7 @@ class CommunicationSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Director+ clearance
-        if not Config.has_permission(user_clearance, 'DIRECTOR_SECURITY'):
+        if not Config.has_permission(user_clearance, 'DEPARTMENT_DIRECTORS'):
             await interaction.response.send_message("❌ You need Director+ clearance to cancel emergency alerts.", ephemeral=True)
             return
         
@@ -391,8 +391,8 @@ class CommunicationSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Chief+ clearance
-        if not Config.has_permission(user_clearance, 'CHIEF_OPERATIONS'):
-            await interaction.response.send_message("❌ You need Chief+ clearance to generate status reports.", ephemeral=True)
+        if not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
+            await interaction.response.send_message("❌ You need Command+ clearance to generate status reports.", ephemeral=True)
             return
         
         # Generate report content

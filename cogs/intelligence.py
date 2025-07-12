@@ -59,14 +59,14 @@ class IntelligenceSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
 
         # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
+        if not Config.has_permission(user_clearance, 'BETA'):
             await interaction.response.send_message("❌ You need BETA+ clearance to access intelligence reports.", ephemeral=True)
             return
 
         # Check classification access
         classification_requirements = {
-            'confidential': 'BETA_SECURITY',
-            'secret': 'BETA_SECURITY', 
+            'confidential': 'BETA',
+            'secret': 'BETA', 
             'top_secret': 'EXECUTIVE_COMMAND'
         }
 
@@ -242,7 +242,7 @@ class IntelligenceSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
 
         # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
+        if not Config.has_permission(user_clearance, 'BETA'):
             await interaction.response.send_message("❌ You need BETA+ clearance to request intelligence briefings.", ephemeral=True)
             return
 
@@ -357,14 +357,14 @@ class IntelligenceSystem(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
 
         # Check if user has BETA+ clearance
-        if not Config.has_permission(user_clearance, 'BETA_SECURITY'):
+        if not Config.has_permission(user_clearance, 'BETA'):
             await interaction.response.send_message("❌ You need BETA+ clearance to search intelligence database.", ephemeral=True)
             return
 
         # Check classification access
         classification_requirements = {
-            'confidential': 'BETA_SECURITY',
-            'secret': 'BETA_SECURITY',
+            'confidential': 'BETA',
+            'secret': 'BETA',
             'top_secret': 'EXECUTIVE_COMMAND'
         }
 
