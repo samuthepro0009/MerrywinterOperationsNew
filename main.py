@@ -10,8 +10,6 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from flask import Flask
-
 from config.settings import Config
 from utils.logger import setup_logger
 from utils.storage import Storage
@@ -21,10 +19,6 @@ load_dotenv()
 
 # Setup logging
 logger = setup_logger()
-
-# Create Flask app instance for the web dashboard
-app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "frost-ai-secret-key")
 
 class MerrywinterBot(commands.Bot):
     """Main bot class for Merrywinter Security Consulting"""
@@ -266,8 +260,7 @@ async def main():
     finally:
         await bot.close()
 
-# Export the Flask app for gunicorn
-from app import app
+# Main entry point for Discord bot only
 
 if __name__ == "__main__":
     asyncio.run(main())
