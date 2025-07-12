@@ -195,7 +195,6 @@ class HighCommand(commands.Cog):
     )
     async def operation_start(self, interaction: discord.Interaction, operation_name: str, objective: str, participants: int, duration: int, classified: bool = False):
         """Start a new operation"""
-        print(f"🔍 DEBUG: operation_start called by {interaction.user.display_name} - Operation: {operation_name}")
         user_clearance = get_user_clearance(interaction.user.roles)
         
         # Check if user has Chief+ clearance
@@ -271,9 +270,7 @@ class HighCommand(commands.Cog):
         embed.set_footer(text=f"{Config.COMPANY_NAME} - Operation Command")
         
         # Send to operation channel
-        print(f"🔍 DEBUG: Sending operation message to channel {operation_channel.name} for {operation_name}")
         await operation_channel.send(embed=embed)
-        print(f"🔍 DEBUG: Operation message sent successfully")
         
         # Save operation data
         operation_data = {
@@ -379,9 +376,70 @@ class HighCommand(commands.Cog):
         await interaction.response.send_message(f"✅ Activity logged for operation {operation_id}!", ephemeral=True)
     
     async def _send_dm_notifications(self, guild, data, notification_type):
-        """Send enhanced DM notifications to specific roles for deployments and operations"""
+        """Send encrypted-style DM notifications with decryption animation"""
         if notification_type == 'deployment':
             target_roles = Config.DEPLOYMENT_NOTIFICATION_ROLES
+        elif notification_type == 'operation':
+            target_roles = Config.OPERATION_NOTIFICATION_ROLES
+        else:
+            return
+        
+        # Find members with target roles
+        notified_count = 0
+        failed_count = 0
+        
+        for member in guild.members:
+            if member.bot:
+                continue
+                
+            member_role_names = [role.name for role in member.roles]
+            if any(role_name in member_role_names for role_name in target_roles):
+                try:
+                    await self._send_encrypted_message(member, data, notification_type)
+                    notified_count += 1
+                except discord.Forbidden:
+                    failed_count += 1
+                except Exception as e:
+                    failed_count += 1
+                    print(f"Failed to send DM to {member}: {e}")
+        
+        print(f"✅ Sent {notification_type} encrypted DM notifications to {notified_count} commanders ({failed_count} failed - DMs disabled)")
+    
+    async def _send_encrypted_message(self, member, data, notification_type):
+        """Send animated encrypted message to member"""
+        
+        # Phase 1: Encrypted message incoming
+        initial_embed = discord.Embed(
+            title="📡 ENCRYPTED TRANSMISSION INCOMING",
+            description="```\n🔐 SECURE CHANNEL ESTABLISHED\n🛡️ QUANTUM ENCRYPTION ACTIVE\n📶 SIGNAL STRENGTH: ███████████ 100%\n\n⚠️  CLASSIFIED COMMUNICATION DETECTED\n⏳ PREPARING DECRYPTION PROTOCOLS...\n```",
+            color=0x00FF41,  # Matrix green
+            timestamp=datetime.utcnow()
+        )
+        initial_embed.set_footer(text="F.R.O.S.T AI • Secure Communications Network")
+        
+        # Send initial message
+        message = await member.send(embed=initial_embed)
+        await asyncio.sleep(2)
+        
+        # Phase 2: Decrypting
+        decrypt_embed = discord.Embed(
+            title="🔓 DECRYPTING TRANSMISSION...",
+            description="```\n▓▓▓▓▓▓▓▓▓▓ DE-CRYPTING... ▓▓▓▓▓▓▓▓▓▓\n\n[████████████████████] 100%\n\n🔍 ANALYZING ENCRYPTED DATA\n🔐 VERIFYING SECURITY CLEARANCE\n✅ CLEARANCE VERIFIED - PROCEEDING\n\n⚡ DECRYPTION SUCCESSFUL\n📋 PREPARING CLASSIFIED BRIEFING...\n```",
+            color=0xFFFF00,  # Yellow
+            timestamp=datetime.utcnow()
+        )
+        decrypt_embed.set_footer(text="F.R.O.S.T AI • Quantum Decryption Engine")
+        
+        await message.edit(embed=decrypt_embed)
+        await asyncio.sleep(3)
+        
+        # Phase 3: Reveal actual content
+        await self._send_decrypted_content(message, data, notification_type)
+    
+    async def _send_decrypted_content(self, message, data, notification_type):
+        """Send the actual decrypted content"""
+        
+        if notification_type == 'deployment':
             # Map sector codes to full names
             sector_names = {
                 "alpha": "Sector Alpha - Urban Operations",
@@ -400,116 +458,84 @@ class HighCommand(commands.Cog):
                 "intelligence": "Intelligence Gathering"
             }
             
-            title = f"🚁 DEPLOYMENT AUTHORIZATION ISSUED"
-            description = f"**Deployment ID:** `{data['deployment_id']}`\n**Status:** `ACTIVE DEPLOYMENT`"
+            if data.get('classified'):
+                title = "🔒 [CLASSIFIED] DEPLOYMENT AUTHORIZATION"
+                color = 0xFF0000
+            else:
+                title = "🚁 DEPLOYMENT AUTHORIZATION DECRYPTED"
+                color = 0x00FF41
             
-        elif notification_type == 'operation':
-            target_roles = Config.OPERATION_NOTIFICATION_ROLES
-            title = f"🎯 OPERATION COMMENCED"
-            description = f"**Operation:** `{data['operation_name']}`\n**Operation ID:** `{data['operation_id']}`\n**Status:** `ACTIVE OPERATION`"
-        else:
-            return
-        
-        # Create enhanced DM embed
-        if data.get('classified'):
-            embed = discord.Embed(
-                title=f"🔒 [CLASSIFIED] {title}",
-                description=f"{description}\n\n⚠️ **CLASSIFIED OPERATION**\n*Executive Command Authorization Required*",
-                color=0xFF0000,  # Red for classified
-                timestamp=datetime.utcnow()
-            )
-        else:
-            embed = discord.Embed(
-                title=title,
-                description=description,
-                color=0xFF8C00,  # Orange for high priority
-                timestamp=datetime.utcnow()
-            )
-        
-        # Add detailed information based on type
-        if notification_type == 'deployment':
-            embed.add_field(
-                name="📋 Deployment Details",
-                value=f"**Sector:** {sector_names.get(data.get('sector', ''), data.get('sector', 'Unknown'))}\n"
-                      f"**Units Deployed:** {data.get('units', 'Unknown')}\n"
-                      f"**Mission Type:** {mission_names.get(data.get('mission_type', ''), data.get('mission_type', 'Unknown'))}\n"
-                      f"**Priority Level:** {data.get('priority', 'Unknown').upper()}",
-                inline=False
-            )
-            embed.add_field(
-                name="⚡ Command Response Required",
-                value="• Review deployment parameters\n• Coordinate sector resources\n• Monitor unit status\n• Report to High Command",
-                inline=False
-            )
+            description = f"```\n📋 CLASSIFICATION: {'TOP SECRET' if data.get('classified') else 'CONFIDENTIAL'}\n🔐 CLEARANCE REQUIRED: {'EXECUTIVE COMMAND' if data.get('classified') else 'HIGH COMMAND'}\n⏰ TIMESTAMP: {datetime.utcnow().strftime('%Y%m%d-%H%M%S')}Z\n```\n\n**DEPLOYMENT ID:** `{data['deployment_id']}`\n**STATUS:** `ACTIVE DEPLOYMENT`"
             
-        elif notification_type == 'operation':
-            embed.add_field(
-                name="🎯 Operation Parameters",
-                value=f"**Primary Objective:** {data.get('objective', 'Unknown')}\n"
-                      f"**Participants:** {data.get('participants', 'Unknown')} personnel\n"
-                      f"**Duration:** {data.get('duration', 'Unknown')} hours\n"
-                      f"**Start Time:** {datetime.utcnow().strftime('%H:%M:%S')} UTC",
-                inline=False
-            )
-            embed.add_field(
-                name="⚡ Command Response Required",
-                value="• Coordinate operational assets\n• Monitor mission progress\n• Maintain communication\n• Prepare contingency plans",
-                inline=False
-            )
+            details = f"**SECTOR:** {sector_names.get(data.get('sector', ''), data.get('sector', 'Unknown'))}\n**UNITS DEPLOYED:** {data.get('units', 'Unknown')}\n**MISSION TYPE:** {mission_names.get(data.get('mission_type', ''), data.get('mission_type', 'Unknown'))}\n**PRIORITY LEVEL:** {data.get('priority', 'Unknown').upper()}"
+            
+            commands = "```\n> IMMEDIATE ACTIONS REQUIRED:\n• Review deployment parameters\n• Coordinate sector resources  \n• Monitor unit status\n• Report to High Command\n```"
+            
+        else:  # operation
+            if data.get('classified'):
+                title = "🔒 [CLASSIFIED] OPERATION COMMENCED"
+                color = 0xFF0000
+            else:
+                title = "🎯 OPERATION COMMENCED - DECRYPTED"
+                color = 0x00FF41
+            
+            description = f"```\n📋 CLASSIFICATION: {'TOP SECRET' if data.get('classified') else 'CONFIDENTIAL'}\n🔐 CLEARANCE REQUIRED: {'EXECUTIVE COMMAND' if data.get('classified') else 'HIGH COMMAND'}\n⏰ TIMESTAMP: {datetime.utcnow().strftime('%Y%m%d-%H%M%S')}Z\n```\n\n**OPERATION:** `{data['operation_name']}`\n**OPERATION ID:** `{data['operation_id']}`\n**STATUS:** `ACTIVE OPERATION`"
+            
+            details = f"**PRIMARY OBJECTIVE:** {data.get('objective', 'Unknown')}\n**PARTICIPANTS:** {data.get('participants', 'Unknown')} personnel\n**DURATION:** {data.get('duration', 'Unknown')} hours\n**START TIME:** {datetime.utcnow().strftime('%H:%M:%S')} UTC"
+            
+            commands = "```\n> IMMEDIATE ACTIONS REQUIRED:\n• Coordinate operational assets\n• Monitor mission progress\n• Maintain communication\n• Prepare contingency plans\n```"
         
-        # Add authorization info
-        authorizing_member = guild.get_member(data.get('authorized_by') or data.get('commander'))
-        if authorizing_member and not data.get('classified'):
-            embed.add_field(
-                name="🔐 Authorization",
-                value=f"**Authorized By:** {authorizing_member.display_name}\n"
-                      f"**Command Level:** High Command\n"
-                      f"**Clearance:** Verified",
-                inline=True
-            )
-        elif data.get('classified'):
-            embed.add_field(
-                name="🔐 Authorization",
-                value="**Authorized By:** [RESTRICTED]\n"
-                      f"**Command Level:** Executive Command\n"
-                      f"**Clearance:** CLASSIFIED",
-                inline=True
-            )
+        # Create final decrypted embed
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=color,
+            timestamp=datetime.utcnow()
+        )
         
-        # Add timestamp and company info
         embed.add_field(
-            name="🕐 Timestamp",
-            value=f"**Issued:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
-                  f"**Mission:** {Config.COMPANY_MOTTO}\n"
-                  f"**Status:** Active",
+            name="📊 OPERATIONAL DETAILS",
+            value=details,
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚡ COMMAND DIRECTIVES",
+            value=commands,
+            inline=False
+        )
+        
+        if data.get('classified'):
+            embed.add_field(
+                name="🔐 AUTHORIZATION",
+                value="```\nAUTHORIZED BY: [REDACTED]\nCOMMAND LEVEL: EXECUTIVE\nCLEARANCE: TOP SECRET\n```",
+                inline=True
+            )
+        else:
+            # Get authorizing member
+            guild = message.channel.recipient.mutual_guilds[0] if hasattr(message.channel, 'recipient') else None
+            if guild:
+                authorizing_member = guild.get_member(data.get('authorized_by') or data.get('commander'))
+                if authorizing_member:
+                    embed.add_field(
+                        name="🔐 AUTHORIZATION",
+                        value=f"```\nAUTHORIZED BY: {authorizing_member.display_name.upper()}\nCOMMAND LEVEL: HIGH COMMAND\nCLEARANCE: VERIFIED\n```",
+                        inline=True
+                    )
+        
+        embed.add_field(
+            name="🕐 TEMPORAL DATA",
+            value=f"```\nISSUED: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}Z\nMISSION: {Config.COMPANY_MOTTO}\nSTATUS: ACTIVE\n```",
             inline=True
         )
         
         embed.set_footer(
-            text=f"F.R.O.S.T AI v{Config.AI_VERSION} • {Config.COMPANY_NAME}",
+            text=f"🔐 F.R.O.S.T AI v{Config.AI_VERSION} • ENCRYPTED CHANNEL • {Config.COMPANY_NAME}",
             icon_url=None
         )
         
-        # Send notifications to members with target roles
-        notified_count = 0
-        failed_count = 0
-        
-        for member in guild.members:
-            if member.bot:
-                continue
-                
-            member_role_names = [role.name for role in member.roles]
-            if any(role_name in member_role_names for role_name in target_roles):
-                try:
-                    await member.send(embed=embed)
-                    notified_count += 1
-                except discord.Forbidden:
-                    failed_count += 1
-                except Exception as e:
-                    failed_count += 1
-                    print(f"Failed to send DM to {member}: {e}")
-        
-        print(f"✅ Sent {notification_type} DM notifications to {notified_count} commanders ({failed_count} failed - DMs disabled)")
+        # Final reveal
+        await message.edit(embed=embed)
 
 async def setup(bot):
     """Setup function for the cog"""

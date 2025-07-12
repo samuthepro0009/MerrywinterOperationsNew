@@ -91,7 +91,8 @@ class MerrywinterBot(commands.Bot):
                 'cogs.game_monitoring',
                 'cogs.equipment_management',
                 'cogs.training_progress',
-                'cogs.after_action_reports'
+                'cogs.after_action_reports',
+                'cogs.deployment_visualizer'
             ]
 
             for cog in cogs:
