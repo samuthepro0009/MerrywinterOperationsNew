@@ -283,12 +283,12 @@ class SecurityClearance(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
     
-    @app_commands.command(name="promote", description="Promote an operator (Admin only)")
-    @app_commands.describe(user="User to promote", clearance_level="Clearance level (ALPHA, BETA, OMEGA)")
+    @app_commands.command(name="promote", description="Promote enlisted personnel (Admin only)")
+    @app_commands.describe(user="User to promote", clearance_level="Enlisted rank (ALPHA, BETA, OMEGA)")
     @app_commands.choices(clearance_level=[
-        app_commands.Choice(name="ALPHA - Junior Enlisted", value="ALPHA"),
-        app_commands.Choice(name="BETA - Enlisted NCO", value="BETA"),
-        app_commands.Choice(name="OMEGA - Senior Enlisted", value="OMEGA")
+        app_commands.Choice(name="ALPHA - Junior Enlisted (Corporal level)", value="ALPHA"),
+        app_commands.Choice(name="BETA - Enlisted NCO (Sergeant level)", value="BETA"),
+        app_commands.Choice(name="OMEGA - Senior Enlisted (Sergeant Major level)", value="OMEGA")
     ])
     async def promote_operator(self, interaction: discord.Interaction, user: discord.Member, clearance_level: str):
         """Promote an operator (Admin only)"""

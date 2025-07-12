@@ -65,9 +65,9 @@ class HighCommand(commands.Cog):
         """Deploy units to operational sectors"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
-        # Check if user has Director+ clearance
-        if not Config.has_permission(user_clearance, 'DIRECTOR_SECURITY'):
-            await interaction.response.send_message("❌ You need Director+ clearance to authorize deployments.", ephemeral=True)
+        # Check if user has Command Level+ clearance (officers only)
+        if not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
+            await interaction.response.send_message("❌ You need Command Level+ clearance to authorize deployments.", ephemeral=True)
             return
         
         # Check if classified operation requires Executive Command clearance
@@ -227,9 +227,9 @@ class HighCommand(commands.Cog):
         """Start a new operation"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
-        # Check if user has Chief+ clearance
-        if not Config.has_permission(user_clearance, 'CHIEF_OPERATIONS'):
-            await interaction.response.send_message("❌ You need Chief+ clearance to start operations.", ephemeral=True)
+        # Check if user has Command Level+ clearance (officers only)
+        if not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
+            await interaction.response.send_message("❌ You need Command Level+ clearance to start operations.", ephemeral=True)
             return
         
         # Check if classified operation requires Executive Command clearance
@@ -369,9 +369,9 @@ class HighCommand(commands.Cog):
         """Log operation activities"""
         user_clearance = get_user_clearance(interaction.user.roles)
         
-        # Check if user has Director+ clearance
-        if not Config.has_permission(user_clearance, 'DIRECTOR_SECURITY'):
-            await interaction.response.send_message("❌ You need Director+ clearance to log operations.", ephemeral=True)
+        # Check if user has Command Level+ clearance (officers only)
+        if not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
+            await interaction.response.send_message("❌ You need Command Level+ clearance to log operations.", ephemeral=True)
             return
         
         # Check if operation log channel is configured

@@ -82,13 +82,14 @@ class ModerationSystem(commands.Cog):
             await interaction.response.send_message("❌ You don't have permission to warn users.", ephemeral=True)
             return
         
-        # Don't warn high-clearance users unless issuer has higher clearance
+        # Don't warn officers unless issuer has higher clearance
         user_clearance = get_user_clearance(user.roles)
         issuer_clearance = get_user_clearance(interaction.user.roles)
         
-        if (user_clearance in ['OMEGA', 'BETA'] and 
+        # Officers (Command Level+) can only be warned by higher officers
+        if (Config.has_permission(user_clearance, 'COMMAND_LEVEL') and 
             not Config.has_permission(issuer_clearance, user_clearance)):
-            await interaction.response.send_message("❌ You cannot warn users with equal or higher clearance.", ephemeral=True)
+            await interaction.response.send_message("❌ You cannot warn officers with equal or higher clearance.", ephemeral=True)
             return
         
         # Create warning data
@@ -188,13 +189,14 @@ class ModerationSystem(commands.Cog):
             await interaction.response.send_message("❌ Duration must be between 1 and 1440 minutes (24 hours).", ephemeral=True)
             return
         
-        # Don't timeout high-clearance users unless issuer has higher clearance
+        # Don't timeout officers unless issuer has higher clearance
         user_clearance = get_user_clearance(user.roles)
         issuer_clearance = get_user_clearance(interaction.user.roles)
         
-        if (user_clearance in ['OMEGA', 'BETA'] and 
+        # Officers (Command Level+) can only be timed out by higher officers
+        if (Config.has_permission(user_clearance, 'COMMAND_LEVEL') and 
             not Config.has_permission(issuer_clearance, user_clearance)):
-            await interaction.response.send_message("❌ You cannot timeout users with equal or higher clearance.", ephemeral=True)
+            await interaction.response.send_message("❌ You cannot timeout officers with equal or higher clearance.", ephemeral=True)
             return
         
         # Try to timeout the user
@@ -253,13 +255,14 @@ class ModerationSystem(commands.Cog):
             await interaction.response.send_message("❌ You don't have permission to kick users.", ephemeral=True)
             return
         
-        # Don't kick high-clearance users unless issuer has higher clearance
+        # Don't kick officers unless issuer has higher clearance
         user_clearance = get_user_clearance(user.roles)
         issuer_clearance = get_user_clearance(interaction.user.roles)
         
-        if (user_clearance in ['OMEGA', 'BETA'] and 
+        # Officers (Command Level+) can only be kicked by higher officers
+        if (Config.has_permission(user_clearance, 'COMMAND_LEVEL') and 
             not Config.has_permission(issuer_clearance, user_clearance)):
-            await interaction.response.send_message("❌ You cannot kick users with equal or higher clearance.", ephemeral=True)
+            await interaction.response.send_message("❌ You cannot kick officers with equal or higher clearance.", ephemeral=True)
             return
         
         try:

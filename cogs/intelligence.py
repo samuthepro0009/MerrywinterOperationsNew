@@ -66,9 +66,9 @@ class IntelligenceSystem(commands.Cog):
 
         # Check classification access
         classification_requirements = {
-            'confidential': 'BETA',
-            'secret': 'BETA', 
-            'top_secret': 'EXECUTIVE_COMMAND'
+            'confidential': 'COMMAND_LEVEL',  # Officers can access confidential
+            'secret': 'DEPARTMENT_DIRECTORS',  # Directors can access secret
+            'top_secret': 'EXECUTIVE_COMMAND'  # Only Executive Command for top secret
         }
 
         required_clearance = classification_requirements.get(classification, 'BETA_SECURITY')
@@ -95,10 +95,10 @@ class IntelligenceSystem(commands.Cog):
             access_note = "Executive Command Only"
         elif classification == 'secret':
             classification_display = "🟡 SECRET"
-            access_note = "BETA+ Clearance Required"
+            access_note = "Director+ Clearance Required"
         else:
             classification_display = "🔵 CONFIDENTIAL"
-            access_note = "BETA+ Clearance Required"
+            access_note = "Command Level+ Clearance Required"
 
         # Create intelligence embed
         embed = discord.Embed(
@@ -366,9 +366,9 @@ class IntelligenceSystem(commands.Cog):
 
         # Check classification access
         classification_requirements = {
-            'confidential': 'BETA',
-            'secret': 'BETA',
-            'top_secret': 'EXECUTIVE_COMMAND'
+            'confidential': 'COMMAND_LEVEL',  # Officers can search confidential
+            'secret': 'DEPARTMENT_DIRECTORS',  # Directors can search secret
+            'top_secret': 'EXECUTIVE_COMMAND'  # Only Executive Command for top secret
         }
 
         required_clearance = classification_requirements.get(classification, 'BETA_SECURITY')

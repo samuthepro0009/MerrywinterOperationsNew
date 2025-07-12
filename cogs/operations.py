@@ -38,12 +38,12 @@ class PMCOperations(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         if user_clearance == 'CIVILIAN':
-            await interaction.response.send_message("❌ You need military clearance to access mission briefings.", ephemeral=True)
+            await interaction.response.send_message("❌ You need enlisted status or higher to access mission briefings.", ephemeral=True)
             return
         
-        # Check if classified mission requires higher clearance
-        if classified and not Config.has_permission(user_clearance, 'BETA'):
-            await interaction.response.send_message("❌ You need BETA+ clearance to access classified missions.", ephemeral=True)
+        # Check if classified mission requires officer clearance
+        if classified and not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
+            await interaction.response.send_message("❌ You need Command Level+ clearance to access classified missions.", ephemeral=True)
             return
         
         # Generate mission details
@@ -172,7 +172,7 @@ class PMCOperations(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         if user_clearance == 'CIVILIAN':
-            await interaction.response.send_message("❌ You need military clearance to access operational status.", ephemeral=True)
+            await interaction.response.send_message("❌ You need enlisted status or higher to access operational status.", ephemeral=True)
             return
         
         # Load operations data
@@ -240,7 +240,7 @@ class PMCOperations(commands.Cog):
         user_clearance = get_user_clearance(interaction.user.roles)
         
         if user_clearance == 'CIVILIAN':
-            await interaction.response.send_message("❌ You need military clearance to deploy.", ephemeral=True)
+            await interaction.response.send_message("❌ You need enlisted status or higher to deploy.", ephemeral=True)
             return
         
         if duration < 1 or duration > 24:
