@@ -25,6 +25,9 @@ class Storage:
         self.roblox_links_file = f'{self.data_dir}/roblox_links.json'
         self.game_monitoring_file = f'{self.data_dir}/game_monitoring.json'
         self.game_status_log_file = f'{self.data_dir}/game_status_log.json'
+        self.equipment_inventory_file = f'{self.data_dir}/equipment_inventory.json'
+        self.training_progress_file = f'{self.data_dir}/training_progress.json'
+        self.after_action_reports_file = f'{self.data_dir}/after_action_reports.json'
         
         self._ensure_data_directory()
         self._lock = asyncio.Lock()
@@ -373,3 +376,33 @@ class Storage:
                 continue
         
         return filtered_entries
+    
+    # Equipment Management Methods
+    async def save_equipment_inventory(self, inventory):
+        """Save equipment inventory data"""
+        async with self._lock:
+            await self._save_json(self.equipment_inventory_file, inventory)
+    
+    async def load_equipment_inventory(self):
+        """Load equipment inventory data"""
+        return await self._load_json(self.equipment_inventory_file)
+    
+    # Training Progress Methods
+    async def save_training_progress(self, progress):
+        """Save training progress data"""
+        async with self._lock:
+            await self._save_json(self.training_progress_file, progress)
+    
+    async def load_training_progress(self):
+        """Load training progress data"""
+        return await self._load_json(self.training_progress_file)
+    
+    # After Action Reports Methods
+    async def save_after_action_reports(self, reports):
+        """Save after action reports data"""
+        async with self._lock:
+            await self._save_json(self.after_action_reports_file, reports)
+    
+    async def load_after_action_reports(self):
+        """Load after action reports data"""
+        return await self._load_json(self.after_action_reports_file)
