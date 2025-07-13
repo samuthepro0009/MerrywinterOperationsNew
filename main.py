@@ -47,11 +47,16 @@ class Config:
 
     # 24/7 Uptime Configuration
     ENABLE_KEEPALIVE = True
-    KEEPALIVE_INTERVAL = 5  # More frequent pings for better uptime
-    HEALTH_CHECK_INTERVAL = 3  # Faster health checks
+    KEEPALIVE_INTERVAL = 3  # More frequent pings for Render
+    HEALTH_CHECK_INTERVAL = 2  # Even faster health checks for Render
     AUTO_RESTART_ON_ERROR = True
     KEEPALIVE_PORT = 8080
     WEB_PORT = 5000
+    
+    # Render-specific settings
+    RENDER_OPTIMIZATION = True
+    MAX_RESTART_ATTEMPTS = 3
+    RESTART_COOLDOWN = 300  # 5 minutes between restart attempts
 
     # Colors
     COLORS = {
@@ -492,7 +497,7 @@ class MerrywinterBot(commands.Bot):
 
     @tasks.loop(minutes=Config.KEEPALIVE_INTERVAL)
     async def keep_alive_task(self):
-        """Keep-alive ping task"""
+        """Keep-alive ping task with Render optimization"""
         try:
             self.last_heartbeat = datetime.now(timezone.utc)
 
@@ -507,23 +512,45 @@ class MerrywinterBot(commands.Bot):
             # Save stats
             storage.save_data('bot_stats.json', self.bot_stats)
 
-            logger.info("✅ Keep-alive ping successful")
+            # Render-specific keep-alive ping
+            if self.keep_alive_server and hasattr(self.keep_alive_server, 'port'):
+                try:
+                    import aiohttp
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f'http://0.0.0.0:{self.keep_alive_server.port}/ping', timeout=10) as response:
+                            if response.status == 200:
+                                logger.info("✅ Keep-alive ping successful (Render optimized)")
+                            else:
+                                logger.warning(f"⚠️ Keep-alive ping returned status {response.status}")
+                except Exception as ping_error:
+                    logger.warning(f"⚠️ Self-ping failed: {ping_error}")
+
+            logger.info("✅ Keep-alive task completed")
 
         except Exception as e:
             logger.error(f"Keep-alive error: {e}")
+            # Force restart keep-alive server if it fails
+            if Config.AUTO_RESTART_ON_ERROR:
+                logger.info("🔄 Attempting to restart keep-alive server...")
+                try:
+                    self.start_keep_alive_server()
+                except Exception as restart_error:
+                    logger.error(f"Failed to restart keep-alive server: {restart_error}")
 
     @tasks.loop(minutes=Config.HEALTH_CHECK_INTERVAL)
     async def health_monitor(self):
-        """Health monitoring task"""
+        """Health monitoring task with Render optimization"""
         try:
             uptime = datetime.now(timezone.utc) - self.start_time
             uptime_hours = round(uptime.total_seconds() / 3600, 2)
 
             logger.info(f"🤖 FROST AI Health Check - Uptime: {uptime_hours}h | Guilds: {len(self.guilds)} | Latency: {round(self.latency * 1000)}ms")
 
-            # Check for connection issues
-            if (datetime.now(timezone.utc) - self.last_heartbeat).total_seconds() > 3600:
-                logger.warning("⚠️ Bot heartbeat delayed - potential connection issues")
+            # Enhanced connection check for Render
+            heartbeat_delay = (datetime.now(timezone.utc) - self.last_heartbeat).total_seconds()
+            
+            if heartbeat_delay > 1800:  # 30 minutes instead of 1 hour
+                logger.warning(f"⚠️ Bot heartbeat delayed ({heartbeat_delay}s) - potential connection issues")
 
                 if Config.AUTO_RESTART_ON_ERROR:
                     logger.info("🔄 Attempting to refresh connection...")
@@ -543,8 +570,21 @@ class MerrywinterBot(commands.Bot):
                         status=discord.Status.online
                     )
 
+            # Check if we're still connected to Discord
+            if not self.is_ready() or self.latency is None:
+                logger.error("🚨 Discord connection lost - attempting reconnection")
+                if Config.AUTO_RESTART_ON_ERROR:
+                    # Force a reconnection attempt
+                    await self.close()
+                    
+            # Log current status for debugging
+            logger.info(f"📊 Status: Ready={self.is_ready()}, Latency={self.latency}, Heartbeat_delay={heartbeat_delay}s")
+
         except Exception as e:
             logger.error(f"Health monitor error: {e}")
+            # Try to restart the bot completely if health monitoring fails repeatedly
+            if Config.AUTO_RESTART_ON_ERROR:
+                logger.error("🚨 Critical health monitor failure - bot may need restart")
 
     @status_update.before_loop
     async def before_status_update(self):
