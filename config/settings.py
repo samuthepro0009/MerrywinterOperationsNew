@@ -139,9 +139,15 @@ class Config:
     
     # 24/7 Uptime Configuration
     ENABLE_KEEPALIVE = True
-    KEEPALIVE_INTERVAL = 30  # minutes
-    HEALTH_CHECK_INTERVAL = 15  # minutes
+    KEEPALIVE_INTERVAL = 15  # minutes - more frequent for better uptime
+    HEALTH_CHECK_INTERVAL = 10  # minutes - frequent health checks
     AUTO_RESTART_ON_ERROR = True
+    KEEPALIVE_PORT = 8080  # Secondary port for keep-alive service
+    
+    # Uptime monitoring settings
+    MAX_HEARTBEAT_DELAY = 3600  # seconds (1 hour)
+    RESTART_ON_CONNECTION_LOSS = True
+    LOG_HEALTH_STATUS = True
     
     # Advanced Moderation Settings
     ANTI_SPAM_ESCALATION = {

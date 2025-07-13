@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 from config.settings import Config
 from utils.logger import setup_logger
 from utils.storage import Storage
+import aiohttp
+import threading
+import time
 
 # Load environment variables
 load_dotenv()
@@ -43,6 +46,11 @@ class MerrywinterBot(commands.Bot):
         # Essential tracking
         self.command_usage_stats = {}
         self.bot_stats = {}
+        
+        # 24/7 Uptime features
+        self.last_heartbeat = datetime.utcnow()
+        self.health_check_url = None
+        self.session = None
 
     async def setup_hook(self):
         """Load all cogs and setup the bot"""
@@ -82,6 +90,11 @@ class MerrywinterBot(commands.Bot):
 
             # Start background tasks
             self.status_update.start()
+            
+            # Start 24/7 uptime features
+            if Config.ENABLE_KEEPALIVE:
+                self.keep_alive.start()
+                self.health_monitor.start()
 
         except Exception as e:
             logger.error(f"Error in setup_hook: {e}")
@@ -161,6 +174,105 @@ class MerrywinterBot(commands.Bot):
     async def before_status_update(self):
         """Wait until bot is ready before starting loops"""
         await self.wait_until_ready()
+
+    @tasks.loop(minutes=Config.KEEPALIVE_INTERVAL)
+    async def keep_alive(self):
+        """Keep the bot alive by pinging itself"""
+        try:
+            self.last_heartbeat = datetime.utcnow()
+            
+            # Create session if not exists
+            if not self.session:
+                self.session = aiohttp.ClientSession()
+            
+            # Try to ping the web dashboard if available
+            try:
+                async with self.session.get('http://0.0.0.0:5000/api/health', timeout=10) as response:
+                    if response.status == 200:
+                        logger.info("✅ Keep-alive ping successful")
+                    else:
+                        logger.warning(f"⚠️ Keep-alive ping returned status {response.status}")
+            except Exception as ping_error:
+                logger.debug(f"Keep-alive ping failed (normal if web dashboard not running): {ping_error}")
+            
+            # Update bot stats
+            self.bot_stats.update({
+                'last_heartbeat': self.last_heartbeat.isoformat(),
+                'uptime_hours': round((datetime.utcnow() - self.start_time).total_seconds() / 3600, 2),
+                'guilds': len(self.guilds),
+                'latency': round(self.latency * 1000)
+            })
+            
+        except Exception as e:
+            logger.error(f"Keep-alive error: {e}")
+
+    @tasks.loop(minutes=Config.HEALTH_CHECK_INTERVAL)
+    async def health_monitor(self):
+        """Monitor bot health and log status"""
+        try:
+            uptime = datetime.utcnow() - self.start_time
+            uptime_hours = round(uptime.total_seconds() / 3600, 2)
+            
+            # Log health status
+            logger.info(f"🤖 FROST AI Health Check - Uptime: {uptime_hours}h | Guilds: {len(self.guilds)} | Latency: {round(self.latency * 1000)}ms")
+            
+            # Check if bot is responding
+            if (datetime.utcnow() - self.last_heartbeat).total_seconds() > 3600:  # 1 hour
+                logger.warning("⚠️ Bot heartbeat delayed - potential connection issues")
+                
+                # Attempt to reconnect if auto-restart enabled
+                if Config.AUTO_RESTART_ON_ERROR:
+                    logger.info("🔄 Attempting to refresh connection...")
+                    await self.change_presence(
+                        activity=discord.Activity(
+                            type=discord.ActivityType.watching,
+                            name="Systems Recovering..."
+                        ),
+                        status=discord.Status.idle
+                    )
+                    await asyncio.sleep(5)
+                    await self.change_presence(
+                        activity=discord.Activity(
+                            type=discord.ActivityType.watching,
+                            name="PMC Operations | /help"
+                        ),
+                        status=discord.Status.online
+                    )
+            
+        except Exception as e:
+            logger.error(f"Health monitor error: {e}")
+
+    @keep_alive.before_loop
+    async def before_keep_alive(self):
+        """Wait until bot is ready before starting keep-alive"""
+        await self.wait_until_ready()
+
+    @health_monitor.before_loop
+    async def before_health_monitor(self):
+        """Wait until bot is ready before starting health monitor"""
+        await self.wait_until_ready()
+
+    async def close(self):
+        """Clean shutdown"""
+        try:
+            # Stop all tasks
+            if hasattr(self, 'keep_alive'):
+                self.keep_alive.cancel()
+            if hasattr(self, 'health_monitor'):
+                self.health_monitor.cancel()
+            if hasattr(self, 'status_update'):
+                self.status_update.cancel()
+            
+            # Close aiohttp session
+            if self.session:
+                await self.session.close()
+                
+            logger.info("🔄 FROST AI shutting down gracefully...")
+            
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
+        finally:
+            await super().close()
 
 async def help_command(interaction: discord.Interaction):
     """Display help information"""
