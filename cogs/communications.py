@@ -365,50 +365,7 @@ class CommunicationSystem(commands.Cog):
                 except Exception as e:
                     print(f"Error sending alert to {member.display_name}: {e}")
     
-    @app_commands.command(name="cancel_alert", description="Cancel active emergency alert (Director+ clearance)")
-    @app_commands.describe(
-        alert_id="Alert ID to cancel"
-    )
-    async def cancel_alert(self, interaction: discord.Interaction, alert_id: str):
-        """Cancel active emergency alert"""
-        user_clearance = get_user_clearance(interaction.user.roles)
-        
-        # Check if user has Command Level+ clearance (officers only)
-        if not Config.has_permission(user_clearance, 'COMMAND_LEVEL'):
-            await interaction.response.send_message("❌ You need Command Level+ clearance to cancel emergency alerts.", ephemeral=True)
-            return
-        
-        # Check if alert exists and is active
-        if alert_id not in self.active_alerts:
-            await interaction.response.send_message("❌ Alert not found or already cancelled.", ephemeral=True)
-            return
-        
-        # Cancel the alert
-        alert_data = self.active_alerts[alert_id]
-        del self.active_alerts[alert_id]
-        
-        # Create cancellation embed
-        embed = discord.Embed(
-            title="✅ EMERGENCY ALERT CANCELLED",
-            description=f"**Alert ID:** {alert_id}\n"
-                       f"**Type:** {alert_data['type'].replace('_', ' ').title()}\n"
-                       f"**Cancelled By:** {interaction.user.display_name} ({user_clearance})\n"
-                       f"**Timestamp:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
-            color=0x00FF00
-        )
-        
-        embed.add_field(
-            name="📢 Cancellation Notice",
-            value="Emergency alert has been cancelled. Resume normal operations.",
-            inline=False
-        )
-        
-        embed.set_footer(text=f"{Config.COMPANY_NAME} - Emergency Alert System")
-        
-        # Broadcast cancellation
-        await self._broadcast_emergency_alert(interaction.guild, embed, "alert_cancelled", "info")
-        
-        await interaction.response.send_message(f"✅ Emergency alert `{alert_id}` has been cancelled!", ephemeral=True)
+    
     
     @app_commands.command(name="status_report", description="Generate automated status report (Chief+ clearance)")
     @app_commands.describe(
