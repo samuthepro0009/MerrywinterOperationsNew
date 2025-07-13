@@ -357,22 +357,32 @@ class MerrywinterBot(commands.Bot):
                 callback=self.status_command
             ))
             
-            # Load essential cogs
-            essential_cogs = [
+            # Load available cogs
+            available_cogs = [
                 'cogs.tickets',
-                'cogs.security',
+                'cogs.security', 
                 'cogs.operations',
                 'cogs.moderation',
                 'cogs.admin',
-                'cogs.high_command'
+                'cogs.high_command',
+                'cogs.communications',
+                'cogs.alerts',
+                'cogs.audit',
+                'cogs.intelligence'
             ]
             
-            for cog in essential_cogs:
+            for cog in available_cogs:
                 try:
-                    await self.load_extension(cog)
-                    logger.info(f"Loaded cog: {cog}")
+                    # Check if cog file exists
+                    cog_path = cog.replace('.', '/') + '.py'
+                    if os.path.exists(cog_path):
+                        await self.load_extension(cog)
+                        logger.info(f"✅ Loaded cog: {cog}")
+                    else:
+                        logger.warning(f"⚠️ Cog file not found: {cog_path}")
                 except Exception as e:
-                    logger.error(f"Failed to load cog {cog}: {e}")
+                    logger.error(f"❌ Failed to load cog {cog}: {e}")
+                    # Continue loading other cogs even if one fails
             
             # Sync slash commands
             try:
