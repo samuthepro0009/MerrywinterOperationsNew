@@ -326,36 +326,33 @@ class MerrywinterBot(commands.Bot):
     async def setup_hook(self):
         """Setup the bot"""
         try:
-            # Add essential slash commands
-            self.tree.add_command(app_commands.Command(
-                name='help',
-                description='Display help information',
-                callback=self.help_command
-            ))
+            # Add essential slash commands - create them properly
+            @app_commands.command(name='help', description='Display help information')
+            async def help_cmd(interaction: discord.Interaction):
+                await self.help_command(interaction)
             
-            self.tree.add_command(app_commands.Command(
-                name='info',
-                description='Display bot information',
-                callback=self.info_command
-            ))
+            @app_commands.command(name='info', description='Display bot information')
+            async def info_cmd(interaction: discord.Interaction):
+                await self.info_command(interaction)
             
-            self.tree.add_command(app_commands.Command(
-                name='ping',
-                description='Check bot latency',
-                callback=self.ping_command
-            ))
+            @app_commands.command(name='ping', description='Check bot latency')
+            async def ping_cmd(interaction: discord.Interaction):
+                await self.ping_command(interaction)
             
-            self.tree.add_command(app_commands.Command(
-                name='clearance',
-                description='Check security clearance level',
-                callback=self.clearance_command
-            ))
+            @app_commands.command(name='clearance', description='Check security clearance level')
+            async def clearance_cmd(interaction: discord.Interaction):
+                await self.clearance_command(interaction)
             
-            self.tree.add_command(app_commands.Command(
-                name='status',
-                description='Check bot system status',
-                callback=self.status_command
-            ))
+            @app_commands.command(name='status', description='Check bot system status')
+            async def status_cmd(interaction: discord.Interaction):
+                await self.status_command(interaction)
+            
+            # Add commands to tree
+            self.tree.add_command(help_cmd)
+            self.tree.add_command(info_cmd)
+            self.tree.add_command(ping_cmd)
+            self.tree.add_command(clearance_cmd)
+            self.tree.add_command(status_cmd)
             
             # Load available cogs
             available_cogs = [
