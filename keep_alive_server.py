@@ -1,4 +1,3 @@
-
 """
 Keep-Alive Web Server for 24/7 Uptime
 Runs alongside Discord bot to maintain connection
@@ -7,7 +6,7 @@ Runs alongside Discord bot to maintain connection
 import asyncio
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, jsonify
 import logging
 
@@ -17,9 +16,9 @@ class KeepAliveServer:
     def __init__(self, port=8080):
         self.app = Flask(__name__)
         self.port = port
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.setup_routes()
-        
+
     def setup_routes(self):
         @self.app.route('/')
         def home():
@@ -33,30 +32,30 @@ class KeepAliveServer:
             <body style="font-family: Arial; background: #1a1a1a; color: #00ff41; padding: 20px;">
                 <h1>🤖 FROST AI Keep-Alive Service</h1>
                 <p>✅ Service Status: ONLINE</p>
-                <p>⏰ Uptime: """ + str(datetime.utcnow() - self.start_time).split('.')[0] + """</p>
+                <p>⏰ Uptime: """ + str(datetime.now(timezone.utc) - self.start_time).split('.')[0] + """</p>
                 <p>🔄 Auto-refresh every 30 seconds</p>
                 <p>📡 Monitoring Discord bot connection...</p>
             </body>
             </html>
             """
-        
+
         @self.app.route('/ping')
         def ping():
             return jsonify({
                 "status": "alive",
-                "timestamp": datetime.utcnow().isoformat(),
-                "uptime": str(datetime.utcnow() - self.start_time)
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "uptime": str(datetime.now(timezone.utc) - self.start_time)
             })
-        
+
         @self.app.route('/health')
         def health():
             return jsonify({
                 "service": "FROST AI Keep-Alive",
                 "status": "healthy",
-                "uptime_seconds": (datetime.utcnow() - self.start_time).total_seconds(),
-                "timestamp": datetime.utcnow().isoformat()
+                "uptime_seconds": (datetime.now(timezone.utc) - self.start_time).total_seconds(),
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
-    
+
     def run(self):
         """Run the keep-alive server"""
         try:
@@ -74,11 +73,12 @@ def start_keep_alive_server():
 
 if __name__ == "__main__":
     start_keep_alive_server()
-    
+
     # Keep main thread alive
     try:
         while True:
             time.sleep(60)
-            print(f"Keep-alive server running... {datetime.utcnow()}")
+            print(f"Keep-alive server running... {datetime.now(timezone.utc)}")
     except KeyboardInterrupt:
         print("Keep-alive server stopped")
+```
