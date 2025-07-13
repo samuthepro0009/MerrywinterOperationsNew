@@ -30,7 +30,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install discord.py python-dotenv aiofiles && python main.py"
+args = "pip install discord.py python-dotenv flask && python main.py"
 
 [[workflows.workflow]]
 name = "Web Dashboard"
