@@ -10,7 +10,7 @@ runButton = "Project"
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
-author = "agent"
+author = "Samu"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -34,7 +34,7 @@ args = "pip install discord.py python-dotenv flask && python main.py"
 
 [[workflows.workflow]]
 name = "Web Dashboard"
-author = "agent"
+author = "Samu"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -79,6 +79,10 @@ args = "python main.py"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
 
 [deployment]
 deploymentTarget = "autoscale"
