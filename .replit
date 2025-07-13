@@ -17,10 +17,6 @@ mode = "parallel"
 task = "shell.exec"
 args = "python main.py"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python keep_alive_server.py"
-
 [[ports]]
 localPort = 5000
 externalPort = 80
