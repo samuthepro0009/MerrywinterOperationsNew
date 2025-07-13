@@ -47,8 +47,8 @@ class Config:
 
     # 24/7 Uptime Configuration
     ENABLE_KEEPALIVE = True
-    KEEPALIVE_INTERVAL = 15
-    HEALTH_CHECK_INTERVAL = 10
+    KEEPALIVE_INTERVAL = 5  # More frequent pings for better uptime
+    HEALTH_CHECK_INTERVAL = 3  # Faster health checks
     AUTO_RESTART_ON_ERROR = True
     KEEPALIVE_PORT = 8080
     WEB_PORT = 5000
@@ -181,32 +181,42 @@ class KeepAliveServer:
             <html>
             <head>
                 <title>FROST AI - Keep Alive</title>
-                <meta http-equiv="refresh" content="30">
+                <meta http-equiv="refresh" content="15">
                 <style>
                     body {{ font-family: Arial, sans-serif; background: #1a1a1a; color: #00ff41; padding: 20px; }}
                     .card {{ background: #2a2a2a; padding: 20px; margin: 10px 0; border-radius: 5px; }}
                     .metric {{ font-size: 18px; font-weight: bold; color: #00ff41; }}
+                    .status {{ color: #00ff41; font-weight: bold; }}
                 </style>
             </head>
             <body>
-                <h1>🤖 FROST AI Keep-Alive Service</h1>
+                <h1>🤖 FROST AI 24/7 Keep-Alive Service</h1>
                 <div class="card">
-                    <h3>Service Status</h3>
-                    <p>✅ Status: <span class="metric">ONLINE</span></p>
+                    <h3>🟢 Service Status</h3>
+                    <p>✅ Status: <span class="status">ONLINE & MONITORING</span></p>
                     <p>⏰ Uptime: <span class="metric">{str(uptime).split('.')[0]}</span></p>
-                    <p>🔄 Auto-refresh: <span class="metric">30 seconds</span></p>
+                    <p>🔄 Auto-refresh: <span class="metric">15 seconds</span></p>
+                    <p>📅 Started: <span class="metric">{self.start_time.strftime('%Y-%m-%d %H:%M:%S UTC')}</span></p>
                 </div>
                 <div class="card">
-                    <h3>Discord Bot Status</h3>
-                    <p>📡 Connection: <span class="metric">{"ONLINE" if self.bot.is_ready() else "OFFLINE"}</span></p>
+                    <h3>🤖 Discord Bot Status</h3>
+                    <p>📡 Connection: <span class="metric">{"🟢 ONLINE" if self.bot.is_ready() else "🔴 OFFLINE"}</span></p>
                     <p>🏓 Latency: <span class="metric">{round(self.bot.latency * 1000) if self.bot.latency else 0}ms</span></p>
                     <p>🔗 Guilds: <span class="metric">{len(self.bot.guilds)}</span></p>
+                    <p>📊 Commands: <span class="metric">{len(self.bot.tree.get_commands())}</span></p>
                 </div>
                 <div class="card">
-                    <h3>API Endpoints</h3>
-                    <p><a href="/ping" style="color: #00ff41;">/ping</a> - Basic ping</p>
-                    <p><a href="/health" style="color: #00ff41;">/health</a> - Health check</p>
-                    <p><a href="/stats" style="color: #00ff41;">/stats</a> - Bot statistics</p>
+                    <h3>🔧 Monitoring Endpoints</h3>
+                    <p><a href="/ping" style="color: #00ff41;">🏓 /ping</a> - Heartbeat check</p>
+                    <p><a href="/health" style="color: #00ff41;">❤️ /health</a> - Health status</p>
+                    <p><a href="/stats" style="color: #00ff41;">📊 /stats</a> - Bot statistics</p>
+                    <p><a href="/uptime" style="color: #00ff41;">⏱️ /uptime</a> - Uptime metrics</p>
+                </div>
+                <div class="card">
+                    <h3>🚀 24/7 Hosting</h3>
+                    <p>🌐 Platform: <span class="metric">Replit Deployment</span></p>
+                    <p>🔒 Security: <span class="metric">Enterprise Grade</span></p>
+                    <p>⚡ Performance: <span class="metric">Optimized</span></p>
                 </div>
             </body>
             </html>
@@ -244,6 +254,23 @@ class KeepAliveServer:
                 "latency": round(self.bot.latency * 1000) if self.bot.latency else 0,
                 "commands_processed": bot_stats.get('commands_processed', 0),
                 "last_updated": datetime.now(timezone.utc).isoformat()
+            })
+
+        @self.app.route('/uptime')
+        def uptime():
+            uptime_delta = datetime.now(timezone.utc) - self.start_time
+            return jsonify({
+                "status": "online",
+                "uptime": {
+                    "seconds": uptime_delta.total_seconds(),
+                    "minutes": round(uptime_delta.total_seconds() / 60, 2),
+                    "hours": round(uptime_delta.total_seconds() / 3600, 2),
+                    "days": round(uptime_delta.total_seconds() / 86400, 2)
+                },
+                "started_at": self.start_time.isoformat(),
+                "current_time": datetime.now(timezone.utc).isoformat(),
+                "bot_ready": self.bot.is_ready(),
+                "keep_alive_active": True
             })
 
     def run(self):
@@ -346,7 +373,6 @@ class MerrywinterBot(commands.Bot):
             self.tree.add_command(help_cmd)
             self.tree.add_command(info_cmd)
             self.tree.add_command(ping_cmd)
-            self.tree.add_command(status_cmd)
             self.tree.add_command(status_cmd)
 
             # Load available cogs
