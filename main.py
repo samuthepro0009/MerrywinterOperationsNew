@@ -45,19 +45,19 @@ class Config:
     AI_FULL_NAME = "Fully Responsive Operational Support Technician"
     AI_VERSION = "v2.5.7"
 
-    # 24/7 Uptime Configuration - Render Optimized
+    # 24/7 Uptime Configuration - Render Optimized for Free Tier
     ENABLE_KEEPALIVE = True
-    KEEPALIVE_INTERVAL = 1  # Every 1 minute for Render
+    KEEPALIVE_INTERVAL = 30  # Every 30 seconds - aggressive for free tier
     HEALTH_CHECK_INTERVAL = 1  # Every 1 minute health checks
     AUTO_RESTART_ON_ERROR = True
     KEEPALIVE_PORT = 8080
     WEB_PORT = 5000
     
-    # Render-specific settings
+    # Render-specific settings optimized for long uptime
     RENDER_OPTIMIZATION = True
-    MAX_RESTART_ATTEMPTS = 5
-    RESTART_COOLDOWN = 120  # 2 minutes between restart attempts
-    EXTERNAL_PING_INTERVAL = 30  # External ping every 30 seconds
+    MAX_RESTART_ATTEMPTS = 10  # More restart attempts
+    RESTART_COOLDOWN = 60  # Faster restart attempts
+    EXTERNAL_PING_INTERVAL = 60  # External ping every minute
 
     # Colors
     COLORS = {
@@ -497,9 +497,9 @@ class MerrywinterBot(commands.Bot):
         except Exception as e:
             logger.error(f"Error updating status: {e}")
 
-    @tasks.loop(minutes=Config.KEEPALIVE_INTERVAL)
+    @tasks.loop(seconds=30)  # Every 30 seconds instead of minutes
     async def keep_alive_task(self):
-        """Keep-alive ping task with aggressive Render optimization"""
+        """Aggressive keep-alive task optimized for Render free tier"""
         try:
             self.last_heartbeat = datetime.now(timezone.utc)
 
@@ -511,47 +511,57 @@ class MerrywinterBot(commands.Bot):
                 'latency': round(self.latency * 1000) if self.latency else 0
             })
 
-            # Save stats
-            storage.save_data('bot_stats.json', self.bot_stats)
+            # Save stats every 10th iteration to reduce I/O
+            if not hasattr(self, '_stats_counter'):
+                self._stats_counter = 0
+            self._stats_counter += 1
+            
+            if self._stats_counter % 10 == 0:
+                storage.save_data('bot_stats.json', self.bot_stats)
 
-            # Multiple ping strategies for Render
+            # Continuous HTTP activity to prevent Render sleep
             import aiohttp
             async with aiohttp.ClientSession() as session:
-                # Self-ping
+                # Self-ping to keep our own server active
                 try:
-                    async with session.get(f'http://0.0.0.0:{Config.KEEPALIVE_PORT}/ping', timeout=10) as response:
+                    async with session.get(f'http://0.0.0.0:{Config.KEEPALIVE_PORT}/ping', timeout=5) as response:
                         if response.status == 200:
                             logger.info("✅ Self-ping successful")
                 except Exception as e:
                     logger.warning(f"⚠️ Self-ping failed: {e}")
                 
-                # External ping to keep service awake
-                render_url = os.getenv('RENDER_EXTERNAL_URL')
-                if render_url:
-                    try:
-                        async with session.get(f'{render_url}/health', timeout=15) as response:
-                            if response.status == 200:
-                                logger.info("✅ External ping successful")
-                    except Exception as e:
-                        logger.warning(f"⚠️ External ping failed: {e}")
-                
-                # Ping multiple external services to generate activity
+                # Ping external service to generate consistent HTTP traffic
                 external_services = [
                     'https://httpbin.org/get',
-                    'https://api.github.com',
-                    'https://jsonplaceholder.typicode.com/posts/1'
+                    'https://api.github.com/zen',
+                    'https://jsonplaceholder.typicode.com/posts/1',
+                    'https://httpstat.us/200'
                 ]
                 
-                for service in external_services:
+                # Rotate through services to simulate real traffic
+                service_index = self._stats_counter % len(external_services)
+                service = external_services[service_index]
+                
+                try:
+                    async with session.get(service, timeout=5) as response:
+                        if response.status == 200:
+                            logger.info(f"✅ External activity ping successful ({service})")
+                except Exception as e:
+                    logger.warning(f"⚠️ External ping failed ({service}): {e}")
+                
+                # Also ping our own external URL if available
+                render_url = os.getenv('RENDER_EXTERNAL_URL')
+                if render_url and self._stats_counter % 3 == 0:  # Every 3rd iteration
                     try:
-                        async with session.get(service, timeout=5) as response:
+                        async with session.get(f'{render_url}/health', timeout=10) as response:
                             if response.status == 200:
-                                logger.info(f"✅ Activity ping to {service} successful")
-                                break
-                    except Exception:
-                        continue
+                                logger.info("✅ External self-ping successful")
+                    except Exception as e:
+                        logger.warning(f"⚠️ External self-ping failed: {e}")
 
-            logger.info("✅ Aggressive keep-alive task completed")
+            # Log every 20th iteration to avoid spam
+            if self._stats_counter % 20 == 0:
+                logger.info(f"✅ Keep-alive cycle #{self._stats_counter} completed")
 
         except Exception as e:
             logger.error(f"Keep-alive error: {e}")
@@ -562,19 +572,28 @@ class MerrywinterBot(commands.Bot):
                 except Exception as restart_error:
                     logger.error(f"Failed to restart keep-alive server: {restart_error}")
 
-    @tasks.loop(seconds=Config.EXTERNAL_PING_INTERVAL)
+    @tasks.loop(seconds=60)  # Every minute for additional coverage
     async def external_ping_task(self):
-        """Frequent external pings to prevent Render from sleeping"""
+        """Additional external pings to maintain service activity"""
         try:
-            render_url = os.getenv('RENDER_EXTERNAL_URL')
-            if render_url:
-                import aiohttp
-                async with aiohttp.ClientSession() as session:
+            # Multiple strategies to keep service awake
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                # Ping a reliable external service
+                async with session.get('https://httpbin.org/uuid', timeout=5) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.info(f"🌐 UUID ping successful: {data.get('uuid', 'N/A')[:8]}...")
+                
+                # Ping our own service if URL is available
+                render_url = os.getenv('RENDER_EXTERNAL_URL')
+                if render_url:
                     async with session.get(f'{render_url}/ping', timeout=10) as response:
                         if response.status == 200:
-                            logger.info("🌐 External ping successful")
+                            logger.info("🔄 Self-service ping successful")
+                            
         except Exception as e:
-            logger.warning(f"External ping failed: {e}")
+            logger.warning(f"External ping task failed: {e}")
 
     @tasks.loop(minutes=Config.HEALTH_CHECK_INTERVAL)
     async def health_monitor(self):
